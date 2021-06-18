@@ -28,7 +28,7 @@ def savefig(fname):
     plt.savefig(plotdir + fname + '.svg')
 
 
-def initialize_data(alpha_prot, maxval):
+def initialize_data(alpha_prot, maxval, labor_market_type):
     """
     generate the initial dataframe
     :param alpha_prot: how much alpha_prot influences x2
@@ -46,9 +46,18 @@ def initialize_data(alpha_prot, maxval):
         x1 = stats.norm.rvs(-maxval, maxval, size=n)
         x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
     # the real skill is simply the mean of x1 and x2
-    s_real = (x1 + x2) / 2
-    df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real})
+    s_real, s_eff = compute_skill(x1, x2, x_prot, labor_market_type)
+    df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real, 's_eff':s_eff})
     return df
+
+
+def compute_skill(x1, x2, x_prot, labor_market_type):
+    s_real = (x1 + x2) / 2
+    if labor_market_type == 'unbiased':
+        s_eff = s_real
+    elif labor_market_type == 'biased':
+        s_eff = s_real + alpha_lb * (x_prot - 0.5)
+    return s_real, s_eff
 
 
 # logistic regression
@@ -77,12 +86,14 @@ def train_and_predict(df, modeltype):
         return model.predict(X), model.coef_
 
 
-def real_decision_function(s_real):
-    """compute real classes based on real skill"""
+def real_decision_function(df):
+    """compute classes defined by the labor market
+    defined via s_eff"""
+    s = df['s_eff']
     if decision_function == 'const':
-        return (s_real > 0).astype(int)
+        return (s > 0).astype(int)
     elif decision_function == 'adaptive':
-        return (s_real > s_real.mean()).astype(int)
+        return (s > s.mean()).astype(int)
     else:
         raise ValueError(f'decision function {decision_function} not known')
 
@@ -119,29 +130,31 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     return x1_new, x2_new
 
 
-def step_model(df, k_matrix, modeltype):
+def step_model(df, k_matrix, modeltype, labor_market_type):
     """make one step with the complete model (prediction model plus intervention model)
     and update the dataframe"""
     df['x1'], df['x2'] = intervention_model(df['x1'], df['x2'], df['class'], df['class_pred'], k_matrix)
     # compute new real classes
-    df['s_real'] = (df['x1'] + df['x2']) / 2
-    df['class'] = real_decision_function(df['s_real'])
+    s_real,s_eff = compute_skill(df['x1'], df['x2'], df['x_prot'], labor_market_type)
+    df['s_real'] = s_real
+    df['s+eff'] = s_eff
+    df['class'] = real_decision_function(df)
     df['class_pred'], coefs = train_and_predict(df, modeltype)
 
     return df.copy(), coefs
 
 
-def run_experiment(df_init, n_steps, k_matrix, modeltype, plot=False):
+def run_experiment(df_init, n_steps, k_matrix, modeltype, labor_market_type, plot=False):
     res = []
     res_summary = []
     df = df_init.copy()
     # initial predictions
     # compute real and predicted classes
-    df['class'] = real_decision_function(df['s_real'])
+    df['class'] = real_decision_function(df)
     df['class_pred'], _ = train_and_predict(df, modeltype)
     df_init = df  # for plotting later on
     for i in range(n_steps):
-        df, coefs = step_model(df, k_matrix, modeltype)
+        df, coefs = step_model(df, k_matrix, modeltype, labor_market_type)
         summary = pd.DataFrame({  # 'step':i,
             'x1_mean': df['x1'].mean(),
             'x2_mean': df['x2'].mean(),
@@ -197,12 +210,16 @@ n = 1000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
 n_steps = 100
+alpha_lb = 1/4
+labor_market_type = 'biased'  # attention: if this is changed ,the data needs to be initialized again!
 decision_function = 'const'  # 'const' | 'adaptive'
-df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval)
+df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval, labor_market_type=labor_market_type)
 p = sns.jointplot(x='x1', y='x2', data=df_init, hue='x_prot')
 savefig(f'initial_data_alpha_prot{alpha_prot}_maxval{maxval}')
 sns.displot(df_init, x='s_real', hue='x_prot')
 savefig(f'initial_data_alpha_prot{alpha_prot}_maxbal{maxval}_sreal')
+sns.displot(df_init, x='s_eff', hue='x_prot')
+savefig(f'initial_data_alpha_prot{alpha_prot}_maxbal{maxval}_s_eff')
 
 # matrix with intervention parameters for the four cases (real class can be 1 or 2, and real class can be 1 or two)
 # [[real class 1 & pred class 1, real class 1 & pred class 2],
@@ -253,7 +270,8 @@ exp_results = {}
 for config in configs:
     _res = {}
     for modeltype in 'full', 'base':
-        res_summary, res = run_experiment(df_init, n_steps=n_steps, k_matrix=config['k_matrix'], modeltype=modeltype)
+        res_summary, res = run_experiment(df_init, n_steps=n_steps, k_matrix=config['k_matrix'], modeltype=modeltype,
+                                          labor_market_type=labor_market_type)
         _res[modeltype] = {**config, 'res_summary': res_summary,
                            'res': res}
 
