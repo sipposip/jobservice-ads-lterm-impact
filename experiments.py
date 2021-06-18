@@ -29,6 +29,12 @@ def savefig(fname):
 
 
 def initialize_data(alpha_prot, maxval):
+    """
+    generate the initial dataframe
+    :param alpha_prot: how much alpha_prot influences x2
+    :param maxval: if not None, truncated normal distributions are used, truncated at +-maxval
+    :return: dataframe
+    """
     # we have two skill features x1 and x2, and a protected feature x_prot
     # the protected feature is correlated with x2
     # we draw them from a truncated normal distribution if maxval is not None
@@ -51,6 +57,10 @@ def train_model(X, y):
 
 
 def train_and_predict(df, modeltype):
+    """
+    train the specified modeltype on the dataframe, and make predictions on the training data
+    :return: (predictions, coefficients)
+    """
     # if there is only once class left in the labels, we make a constant prediction
     # which equals to leaving the labels all the same, and we return 0 for the coefficients
     y = df['class']
@@ -110,6 +120,8 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
 
 
 def step_model(df, k_matrix, modeltype):
+    """make one step with the complete model (prediction model plus intervention model)
+    and update the dataframe"""
     df['x1'], df['x2'] = intervention_model(df['x1'], df['x2'], df['class'], df['class_pred'], k_matrix)
     # compute new real classes
     df['s_real'] = (df['x1'] + df['x2']) / 2
@@ -184,7 +196,7 @@ def run_experiment(df_init, n_steps, k_matrix, modeltype, plot=False):
 n = 1000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
-n_steps=100
+n_steps = 100
 decision_function = 'const'  # 'const' | 'adaptive'
 df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval)
 p = sns.jointplot(x='x1', y='x2', data=df_init, hue='x_prot')
@@ -197,7 +209,7 @@ savefig(f'initial_data_alpha_prot{alpha_prot}_maxbal{maxval}_sreal')
 #  [real class 2 & pred class 1, real class 2 & pred class 2]]
 
 # ----- main experiments
-
+# the configs for the main experiments are collected here and put in a list
 configs = [
     {'scenario': "1",
      'description': 'no targeting, no class-dependent effect',
@@ -221,13 +233,13 @@ configs = [
      },
     {'scenario': "3b",
      'description': 'targeting (more on highprospect group), no class-dependent effect',
-     'k_matrix': np.array([[1/2, 2],
-                           [1/2, 2]]),
+     'k_matrix': np.array([[1 / 2, 2],
+                           [1 / 2, 2]]),
      },
     {'scenario': "4a",
      'description': 'targeting (more on lowprospect group), class-dependent effect',
      'k_matrix': np.array([[4, 1],
-                           [1, 2]])*8**(-1/4), # this factor is necessary to ensure that the gemoetric mean is 1
+                           [1, 2]]) * 8 ** (-1 / 4),  # this factor is necessary to ensure that the gemoetric mean is 1
      },
     {'scenario': "4b",
      'description': 'targeting (more on lowprospect group), class-dependent effect',
@@ -236,6 +248,7 @@ configs = [
      },
 ]
 
+# run all experiments
 exp_results = {}
 for config in configs:
     _res = {}
@@ -246,6 +259,12 @@ for config in configs:
 
     exp_results[config['scenario']] = _res
 
+# -- plot results
+
+# 2-panel plot with between group skill difference and fraction of unpriviliged members classified
+# as high-prospect. All experiments in one plot, with each pair of experiments (both modeltypes) a different color.
+# the experiments with the full models are plotted with continous, the experiments with the base model with dotted
+# lines
 plt.figure(figsize=(12, 8))
 plt.subplot(211)
 colors = sns.color_palette('colorblind', n_colors=7)
@@ -257,7 +276,6 @@ for i, scenario in enumerate(exp_results):
 plt.legend()
 plt.ylabel('between-group-skill-difference \n $S_{x_{pr}=1} - S_{x_{pr}=0}$')
 sns.despine()
-
 plt.subplot(212)
 for i, scenario in enumerate(exp_results):
     data_base = exp_results[scenario]['base']['res_summary']
@@ -267,4 +285,6 @@ for i, scenario in enumerate(exp_results):
 plt.legend()
 plt.ylabel('fraction of unprivileged \n group classified in better class')
 sns.despine()
-savefig('main_results_simple_model')
+savefig(f'main_results_simple_model_{decision_function}')
+
+# TODO: compute and plot the time it takes for s_group2 to reach 1 (in the constant decision function case)
