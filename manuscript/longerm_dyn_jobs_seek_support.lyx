@@ -1,0 +1,2270 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Long-term dynamics of data-driven targeted support for job seekers
+\end_layout
+
+\begin_layout Author
+Sebastian Scher, Know-Center Graz
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Research question: Assume we have a population of individuals, where the
+ prospect on the labor market of each individual is controlled by the personal
+ skill of that individual, described by a set of independent skill features.
+ Additionally, each individual belongs to one of two groups, described by
+ a protected attribute (e.g.
+ gender).
+ The average skill between the two groups is not the same, but still there
+ is significant overlap between the groups.
+ If an observer has knowledge about all skill features of an individual,
+ they can with 100% accuracy compute the total skill of that individual,
+ and knowledge about the protected attribute (i.e.
+ which group the individual belongs to) does not yield any additional informatio
+n with regard to the individual skill.
+ We assume that the labor market (e.g.
+ recruiters) do have access to all skill features, and thus make their decisions
+ solely on the real personal skill of the individuals, as for them there
+ is no additional information in the protected attribute.
+\end_layout
+
+\begin_layout Standard
+We further assume that there is a public authority that helps individuals
+ in improving their skill on the labor market, which we will call the Public
+ Employment Service (PES).
+ The improvement of the skill of the individuals by the PES is done with
+ individualized services, based on the current skill on the labor market
+ of that individual.
+ Critically, however, this public authority does not have access to all
+ skill features, but only to a subset.
+ In addition, it has knowledge about the protected attribute.
+ Since the total skill is not evenly distributed across the two groups,
+ the knowledge of which of the protected groups the individuals belongs
+ combined with historical data gives probabilistic information on the real
+ skill: if the individual belongs to the group that has on average higher
+ skill, the likelihood that this individual has high skill is larger than
+ if it would belong the the other group, even if everything else remains
+ the same.
+ This additional information however has two potential problems: 1) it is
+ only probabilistic and the resulting predictions are only accurate 
+\emph on
+on average
+\emph default
+, and 2) it is based on a protected attribute - therefore, legal and/or
+ ethical reasons might prohibit utilizing that information, as it results
+ in different treatments based solely on the protected attribute.
+\end_layout
+
+\begin_layout Standard
+The goal of this study is to investigate the long-term effects on the population
+ if a public authority provides targeted help, based partly on protected
+ attributes.
+\end_layout
+
+\begin_layout Standard
+Does such targeted help reduce or strengthen existing group-inequalities?
+ What is the long-term effect on general employment? What is the long-term
+ effect on employment in each group? How does this compare to a system that
+ is 
+\emph on
+not 
+\emph default
+using the protected attribute? Are there trade-offs between the - ethically
+ problematic - inclusion of protected attributes in the targeting versus
+ the global goal of high employment?
+\end_layout
+
+\begin_layout Standard
+To address these questions, we use a combination of dynamical numerical
+ modeling ans statistics/machine-learning.
+ We use synthetic data and an individual skill model that is as simple as
+ possible while being just sophisticated enough to reflect inequalities
+ and the possibility of having either full of only part knowledge of the
+ skill of an individual.
+\end_layout
+
+\begin_layout Standard
+Additionally, we make - admittedly simplistic - assumptions on the labor
+ market.
+ 
+\end_layout
+
+\begin_layout Standard
+We develop and use two different overall models: the first model is a simple
+ model that has a fixed population, whose increase of skill over time is
+ influenced by the PES.
+ The targeting of the PES is again influenced by the past mean skill of
+ the two groups, and this past-skill is updated over time as the population
+ changes.
+ This model is generic and abstract, and could also be interpreted for example
+ as a model for targeted education, and labor market dynamics are only included
+ in a very abstract way.
+ Still, this model is interesting, as it is easy to follow and allows to
+ test our intuition, and already captures the basic dynamics over time.
+\end_layout
+
+\begin_layout Standard
+The second model is more complex and considers a pool of job-seekers.
+ This pool has an influx and an outflux, and considers not only the abstract
+ skill of an individual, but additionally the time an individual needs to
+ find a job.
+ This is more related to actual job-markets.
+\end_layout
+
+\begin_layout Standard
+A central aspect of this study is that we consider different scenarios of
+ the PES and how it distributes its resources across individuals with different
+ skills.
+\end_layout
+
+\begin_layout Standard
+What this study is not: This study is not a real-world assessment of any
+ real world public employment service or similar institutions.
+\end_layout
+
+\begin_layout Itemize
+Things to add:
+\end_layout
+
+\begin_layout Itemize
+efficiency argument, we assume there is only a certain amount of help or
+ support available, and the PES wants to distribute in efficiently (whereas
+ 
+\begin_inset Quotes eld
+\end_inset
+
+efficient
+\begin_inset Quotes erd
+\end_inset
+
+ needs to be defined), this is the goal of the EPS
+\end_layout
+
+\begin_layout Itemize
+combination of statistics/ML and system dynamics
+\end_layout
+
+\begin_layout Subsection
+Literature overview
+\end_layout
+
+\begin_layout Standard
+literature on AMS algorithm
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+literature on fairness in general
+\begin_inset Newline newline
+\end_inset
+
+debiasing
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset citation
+LatexCommand cite
+key "damourFairnessNotStatic2020"
+literal "false"
+
+\end_inset
+
+ showed that simulation studies can be used to study fairness issues in
+ changing systems, and that the results (
+\begin_inset Quotes eld
+\end_inset
+
+fair
+\begin_inset Quotes erd
+\end_inset
+
+ or 
+\begin_inset Quotes eld
+\end_inset
+
+not fair
+\begin_inset Quotes erd
+\end_inset
+
+ with repsect to a certain definition of fairness) can differ from a static
+ analysis.
+ They analyzed simple settings of credit-scoring for loans, attention allocation
+ for different sites, and college admissions.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+btprint "btPrintCited"
+bibfiles "job_service_longterm_impact"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Methods
+\end_layout
+
+\begin_layout Subsection
+Personal skill model and data generation
+\end_layout
+
+\begin_layout Standard
+The basis of this study is the following setting: we have a population of
+ 
+\begin_inset Formula $N$
+\end_inset
+
+ individuals.
+ Each individual has a personal skill 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ that is composed of two independent skill-features 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+s_{real}=\frac{1}{2}\left(x_{1}+x_{2}\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We call it 
+\begin_inset Quotes eld
+\end_inset
+
+real
+\begin_inset Quotes erd
+\end_inset
+
+ because we will differentiate it from observed and from predicted/assumed
+ skill and from the skill that the labor market (
+\begin_inset Quotes eld
+\end_inset
+
+recruiters) assigns to the inviduals later on.
+\end_layout
+
+\begin_layout Standard
+In addition, each individual has a binary protected attribute 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+ that can have values of 0 and 1.
+ In reality this could for example be gender, but here it is used in an
+ abstract way.
+ Central here is that the definition if 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ does not contain 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Further we assume that 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ is completely independent of 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+, but 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ is correlated with 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+x_{1=}\sigma_{trunc}\left(0,1\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+x_{pr}=[0,1]
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For generating our artificial population, we draw 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ from a truncated normal distribution, and 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+ from the binary distribution 
+\begin_inset Formula $[0,1]$
+\end_inset
+
+ with uniform probability.
+\end_layout
+
+\begin_layout Standard
+Thus, the probability of an individual belonging to a particular group (with
+ respect to the protected attribute) is 50
+\begin_inset Formula $\%$
+\end_inset
+
+ for both groups.
+\end_layout
+
+\begin_layout Standard
+The second skill feature, 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+, is generated with 
+\begin_inset Formula 
+\begin{equation}
+x_{2}=\frac{1}{2}\left(\alpha_{pr}\cdot\left(x_{pr}-\frac{1}{2}\right)+\sigma_{trunc}\left(0,1\right)\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+the factor 
+\begin_inset Formula $\frac{1}{2}$
+\end_inset
+
+is subtracted from 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+ to ensure that it is centered around zero.
+ When 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ is generated this way, then individuals in group 0.
+ have 
+\shape italic
+on average 
+\shape default
+lower 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+, and therefore on average lower 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+.
+ To reflect this, we will from now on call the group with individuals with
+ 
+\begin_inset Formula $x_{pr}=0$
+\end_inset
+
+ the 
+\shape italic
+underprivileged group.
+
+\shape default
+ Importantly, however, not all individuals in the underprivileged group
+ have low 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ and low 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+.
+ There are individuals in the privileged group that have lower skill than
+ some individuals in the underprivileged group, and there are individuals
+ in the underprivileged group that have a skill that is above the population
+ mean.
+ The joint distribution of 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ and the distribution of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ of the initial population is shown in fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:initial-data"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+From the way 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $x_{2}$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ are generated and the fact that, 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ per definition (e.q.
+ (1)) can be completely inferred from 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ follow two central facts: given 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+, there is no additional information contained in 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+ when one wants to infer 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+.
+ If, however, one has 1) only access to 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and at the same time 2) information on the distribution of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ over the two groups (e.g.
+ the mean of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ seperately for each group), and one wants to infer 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+, then including 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+ in addition to 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ a statistical prediction system yields additional information, even though
+ 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ is completely defined by 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+.
+ This will from the backbone of the whole study.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+a)
+\begin_inset Graphics
+	filename figures/initial_data_alpha_prot2_maxval2.pdf
+	width 50text%
+
+\end_inset
+
+b)
+\begin_inset Graphics
+	filename figures/initial_data_alpha_prot2_maxbal2_sreal.pdf
+	width 50text%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:initial-data"
+
+\end_inset
+
+Initial population.
+ a) distribution of the two skill features, b) distribution of total skill,
+ both split up according to the binary protected attribute
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Simple dynamical model
+\end_layout
+
+\begin_layout Standard
+The simple model assumes that the population is made up of a fixed pool
+ of individuals, without any in- or outflux.
+ The job-market and individual employment is modeled in very abstract and
+ indirect way.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/simple_model_outline.pdf
+	width 100text%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Sketch of the simple dynamical model
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+labor market model
+\end_layout
+
+\begin_layout Standard
+We use two different definitions of the labor market: a biased, and and
+ biased one.
+ Each ones assigns an effective skill .
+ In the unbiased model labor-market prospect is simply the skill 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+x_{eff}=x_{real}
+\end{equation}
+
+\end_inset
+
+, thus the labor market has oracle-access to the real skill and does not
+ alter it in any way.
+ Note that this makes the - quite unrealistic - assumption that the labor-market
+ 1) has perfect information on the skill of individuals and 2) is discrimination
+ free in terms of individual fairness (individuals are not treated differently
+ based on their protected attribute).
+ Important to point out that this labor market is 
+\emph on
+not
+\emph default
+ discrimination free under definitions of fairness based on group-fairness:
+ as the labor-market does not even have access to the protected attribute,
+ it can by definition not ensure group-fairness constraints, such as requiring
+ that from each group the same fraction of people is hired, which in this
+ abstract model would mean that the computation of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ would need to be modified to ensur that each group has the same mean skill.
+\end_layout
+
+\begin_layout Standard
+For the biased labor market model, the effective skill is partly dependent
+ on 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+x_{eff}=\begin{cases}
+x_{real}+\alpha_{lb} & x_{pr}=1\\
+x_{real}-\alpha_{lb} & x_{pr}=0
+\end{cases}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the unprivileged group the skill is made smaller due to the bias, and
+ for the privileged group larger, by the same biase-parameter 
+\begin_inset Formula $\alpha_{lb}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Prediction model
+\end_layout
+
+\begin_layout Standard
+The prediction model is the statistical model used by the hypothetical PES.
+ It is used to predict the labor-market prospects of an individual.
+ In this abstract setting the labor-market prospect is, as mentioned above,
+ 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+.
+ The prediction model classifies individuals on having below or above average
+ 
+\begin_inset Formula $s_{real}.$
+\end_inset
+
+ In a real setting this would be estimated from historical data (potentially
+ updated from time time, or at each timestep).
+ Here it is estimated from the current distribution of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ over the two population groups.
+\end_layout
+
+\begin_layout Standard
+As mentioned before, the basis of this study is that the PES has access
+ to an incomplete set of skill-features only, namely solely to 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+, and additionally access to 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+.
+ To estimate (predict) the prospect class (above or below average 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+) from this, logistic regression is used to create the main (full) prediction
+ model:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+P\left(s_{real}>\gamma|x_{1}\right)=\frac{1}{1+e^{-(\alpha_{1}x_{1}+\alpha_{2}x_{pr}+\beta)}}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+whereas the parameters 
+\begin_inset Formula $\alpha_{1},\alpha_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\beta$
+\end_inset
+
+ are estimated from the current population, and 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ is the threshold set for dividing the low and the high prospect class.
+\end_layout
+
+\begin_layout Standard
+Additionally, we use a second prediction model that does not use 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+P\left(s_{real}>\gamma|x_{1}\right)=\frac{1}{1+e^{-(\alpha_{1}x_{1}+\beta)}}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Per definition of the data generation process, this base model has lower
+ accuracy than the full prediction model.
+\end_layout
+
+\begin_layout Standard
+In the initial timestep, 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ is set to the mean of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+, which equals to zero by definition of how the data is generated.
+ For the following timesteps, we use two different strategies in the experiments
+: 1) 
+\emph on
+constant
+\emph default
+ 
+\begin_inset Formula $\gamma$
+\end_inset
+
+, thus the threshold between the low and the high prospect class does not
+ change, and 2) 
+\emph on
+adaptive
+\emph default
+, where 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ is set to the population-mean of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Intervention Model
+\end_layout
+
+\begin_layout Standard
+The intervention model describes how the effect that the PES has on the
+ individuals.
+ For the simple model, we define the support that the PES provides in a
+ singe timestep as a change in the individual skill features 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ of an individual.
+ We make the change dependent on the current value, with decreasing increments
+ as the skill feature grows, approaching the limits set by the constants
+ 
+\begin_inset Formula $x_{1}^{max}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}^{max}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+x_{1}^{t+1}=max\left(x_{1}^{t}+k_{1}\left(x_{1}^{max}-x_{1}^{t}\right),x_{1}^{t}\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+x_{2}^{t+1}=max\left(x_{2}^{t}+k_{2}\left(x_{2}^{max}-x_{2}^{t}\right),x_{2}^{t}\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The model parameters 
+\begin_inset Formula $k_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $k_{2}$
+\end_inset
+
+ define how fast 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ grow.
+ For simplification, we set 
+\begin_inset Formula $k=k_{1}=k_{2},$
+\end_inset
+
+and thus both skill features have the same growth rate.
+ The value of 
+\begin_inset Formula $k$
+\end_inset
+
+ is central to our study, as it defines how the intervention models affects
+ different people.
+ To this end, we make 
+\begin_inset Formula $k$
+\end_inset
+
+ dependent both on the real prospect class 
+\begin_inset Formula $C_{r}$
+\end_inset
+
+, and prospect class 
+\begin_inset Formula $C_{pr}$
+\end_inset
+
+ predicted by the prediction model.
+ The fact that the growth rate is made depended on the predicted class reflects
+ the idea of targeted help for different prospect classes, and that a prediction
+ model is used for this.
+ The real world idea is not only that different prospect classes receive
+ a different 
+\emph on
+quantity 
+\emph default
+of help, but also a different 
+\emph on
+quality
+\emph default
+ that is better suited for that prospect group.
+ Therefore, we also make 
+\begin_inset Formula $k$
+\end_inset
+
+ dependent on the real prospect group of each individual, as arguably if
+ a certain type of help is better suited for the low than for the low prospect
+ group, than this will have the adverse effect that for a incorrectly classified
+ person it will be especially unsuited.
+\end_layout
+
+\begin_layout Standard
+Since both 
+\begin_inset Formula $C_{r}$
+\end_inset
+
+ and 
+\begin_inset Formula $C_{pr}$
+\end_inset
+
+ are binary, this leads to a 
+\begin_inset Formula $2x2$
+\end_inset
+
+ matrix 
+\begin_inset Formula $k_{ij}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $k_{11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $k_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $k_{21}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $k_{22}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With different values for 
+\begin_inset Formula $k_{ij}$
+\end_inset
+
+ we can now define different scenarios.
+ The difference between 
+\begin_inset Formula $k_{11}$
+\end_inset
+
+and 
+\begin_inset Formula $k_{22}$
+\end_inset
+
+defines how different the effect is of the intervention model is for the
+ two different prospect classes, as intended by the PES.
+ The difference between 
+\begin_inset Formula $k_{11}$
+\end_inset
+
+ and 
+\begin_inset Formula $k_{21}$
+\end_inset
+
+ and between 
+\begin_inset Formula $k_{12}$
+\end_inset
+
+ and 
+\begin_inset Formula $k_{22}$
+\end_inset
+
+ defines how individuals are adversely affected if the are incorrectly classifie
+d by the prediction algorithm, and receive the type of help that is in fact
+ intended for the other group.
+\end_layout
+
+\begin_layout Standard
+The values for the different entries of 
+\begin_inset Formula $k_{ij}$
+\end_inset
+
+ define how - in the abstract setting of our model - 
+\begin_inset Quotes eld
+\end_inset
+
+attention
+\begin_inset Quotes erd
+\end_inset
+
+ or 
+\begin_inset Quotes eld
+\end_inset
+
+resources
+\begin_inset Quotes erd
+\end_inset
+
+ are distributed across the different groups.
+ In order to make the different scenarios better comparable, we constrain
+ the absolute values in such a way that the geometric mean of all 4 entries
+ must be the same in all scenarios.
+ The gemoetric mean is the usually used mean functinon for variables related
+ to growth-rates and similar.
+ We set it to 
+\begin_inset Formula $1/50$
+\end_inset
+
+.
+ This number was chosen more or less arbitrarily so that a typical simulation
+ with constant decision function reaches its equilibrium on the order of
+ 100 timesteps.
+ Changing the scale would only change how much happens in a single timestep
+ of the simulation, and not the overall behavior (with higher 
+\begin_inset Formula $k$
+\end_inset
+
+, we will get the same result earlier, with smaller 
+\begin_inset Formula $k$
+\end_inset
+
+, one needs to run the model for more timesteps).
+ Since also the unit of a timestep is abstract and cannot be translated
+ to a real world time, this does not change the results or their interpretation.
+\end_layout
+
+\begin_layout Standard
+For better readability, the 
+\begin_inset Formula $k$
+\end_inset
+
+-values presented in the text and the plots are all scaled with a factor
+ of 
+\begin_inset Formula $50$
+\end_inset
+
+, so for the 
+\begin_inset Formula $k$
+\end_inset
+
+-matrix for scenario 1 all entries will be displayed as 
+\begin_inset Formula $1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We will use the following scenarios:
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+Agnostic
+\begin_inset Quotes erd
+\end_inset
+
+: 
+\begin_inset Formula $k_{11}=k_{12}=k_{21}=k_{22}$
+\end_inset
+
+.
+ This is the base scenario, where all classes receive both the same quantity
+ and quality of help, and this also has the same effect, independent of
+ the actual labor-market prospects.
+\end_layout
+
+\begin_layout Enumerate
+no targeting, but class-dependent effect: 
+\begin_inset Formula $k_{11}=k_{12}$
+\end_inset
+
+, 
+\begin_inset Formula $k_{21}=k_{22}$
+\end_inset
+
+, two sub-scenarios: a) 
+\begin_inset Formula $k_{11}>k_{22}$
+\end_inset
+
+, b) 
+\begin_inset Formula $k_{11}<k_{22}$
+\end_inset
+
+.
+ In these scenarios, the PES privides the same help to everyone, but this
+ helps works better (a) or worse (b) for individuals with (real) low prospects.
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+targeting, but no class-dependent effect.
+ In this scenario 
+\begin_inset Formula $k$
+\end_inset
+
+ is only dependent on 
+\begin_inset Formula $C_{pr}$
+\end_inset
+
+, not on 
+\begin_inset Formula $C_{r}$
+\end_inset
+
+, 
+\begin_inset Formula $k_{11}=k_{21}$
+\end_inset
+
+, 
+\begin_inset Formula $k_{12}=k_{22}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+targeting with class dependent effect.a)
+\end_layout
+
+\begin_layout Standard
+The scenarios are summarized in table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:overview-of-scenarios"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:overview-of-scenarios"
+
+\end_inset
+
+overview of scenarios, defined by the 
+\begin_inset Formula $k$
+\end_inset
+
+-matrix of the intervention model
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+1) no targeting, no class-dependent effect
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+2a)no targeting, class-dependent effect (more on lowprospect group)
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+2b)no targeting, class-dependent effect (more on highprospect group)
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+3a) targeting (more on lowprospect group), no class-dependent effect
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+3b) targeting (more on highprospect group), no class-dependent effect
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1/2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+4a) 
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $4\cdot8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2\cdot8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+4b) 
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2\cdot8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $4\cdot8^{-\frac{1}{4}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Complex Model
+\end_layout
+
+\begin_layout Standard
+not yet implemented, not yet decided whether we actually need it.
+\end_layout
+
+\begin_layout Subsection
+Metrics
+\end_layout
+
+\begin_layout Section
+Results
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+a)
+\begin_inset Graphics
+	filename figures/main_results_simple_model_const.pdf
+	width 50text%
+
+\end_inset
+
+b)
+\begin_inset Graphics
+	filename figures/main_results_simple_model_adaptive.pdf
+	width 50text%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Upper panels: time evolution of the between-group skill difference (mean
+ skill of privileged group - mean skill of underprivileged group ), lower
+ panels: time evolution of fraction of individuals in from the underprivileged
+ group that are classified as belonging to the high-prospect group.
+ a) with constant decision function, b) with adaptive decision function.All
+ for unbiased labor market.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Discussion and conclusion
+\end_layout
+
+\begin_layout Standard
+What if only 
+\begin_inset Quotes eld
+\end_inset
+
+decision support
+\begin_inset Quotes erd
+\end_inset
+
+, and the decision by the model is only input to a human? It is known that
+ humans tend to rely on such systems (https://journals.sagepub.com/doi/10.1518/0018
+72097778543886)
+\end_layout
+
+\begin_layout Subsection*
+Coda and Data Availability
+\end_layout
+
+\begin_layout Standard
+The software for this study was written in Python and is published with
+ this paper.
+ It allows full reproduction of the results of this study as well as further
+ experimentation with the model parameters.
+\end_layout
+
+\end_body
+\end_document
