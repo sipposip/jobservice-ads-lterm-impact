@@ -4,15 +4,15 @@
 \begin_header
 \save_transient_properties true
 \origin unavailable
-\textclass article
+\textclass paper
 \use_default_options true
 \maintain_unincluded_children false
 \language english
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman "default" "default"
-\font_sans "default" "default"
+\font_roman "lmodern" "default"
+\font_sans "helvet" "default"
 \font_typewriter "default" "default"
 \font_math "auto" "auto"
 \font_default_family default
@@ -29,9 +29,10 @@
 \bibtex_command default
 \index_command default
 \paperfontsize default
+\spacing single
 \use_hyperref false
 \papersize default
-\use_geometry false
+\use_geometry true
 \use_package amsmath 1
 \use_package amssymb 1
 \use_package cancel 1
@@ -44,6 +45,7 @@
 \use_package undertilde 1
 \cite_engine basic
 \cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -55,6 +57,10 @@
 \shortcut idx
 \color #008000
 \end_index
+\leftmargin 3cm
+\topmargin 3cm
+\rightmargin 3cm
+\bottommargin 3cm
 \secnumdepth 3
 \tocdepth 3
 \paragraph_separation indent
@@ -428,7 +434,7 @@ Thus, the probability of an individual belonging to a particular group (with
 \begin_inset Formula $\%$
 \end_inset
 
- for both groups.
+ for both groups, and both groups are therefore of equal or near equal size.
 \end_layout
 
 \begin_layout Standard
@@ -659,6 +665,17 @@ b)
 \end_inset
 
 
+\end_layout
+
+\begin_layout Plain Layout
+b)
+\begin_inset Graphics
+	filename figures/initial_data_alpha_prot2_maxbal2_s_eff_alphalb_0.5.pdf
+	width 50text%
+
+\end_inset
+
+
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -669,8 +686,12 @@ name "fig:initial-data"
 \end_inset
 
 Initial population.
- a) distribution of the two skill features, b) distribution of total skill,
- both split up according to the binary protected attribute
+ a) distribution of the two skill features, b) distribution of real, c)
+ distribution of effective skill for the biased (
+\begin_inset Formula $\alpha_{lb}=0$
+\end_inset
+
+) labor market, all split up according to the binary protected attribute
 \end_layout
 
 \end_inset
@@ -2186,8 +2207,73 @@ not yet implemented, not yet decided whether we actually need it.
 Metrics
 \end_layout
 
+\begin_layout Standard
+We use the following metrics to analyze the results
+\end_layout
+
+\begin_layout Paragraph*
+Between group skill difference
+\end_layout
+
+\begin_layout Standard
+computed for each timestep
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+BGSD_{real}=\overline{S}_{real,x_{pr}=0}-\overline{S}_{real,x_{pr}=1}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+BGSD_{eff}=\overline{S}_{eff,x_{pr}=0}-\overline{S}_{eff,x_{pr}=1}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Fraction of the underpriviliged group classified as high-prospect
+\end_layout
+
+\begin_layout Standard
+computed for each timestep
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\frac{n\left(x_{pr}=0\land C=1\right)}{n\left(x_{pr}=0\right)}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Time after all underpriviliged are classified as high-prospect
+\end_layout
+
+\begin_layout Standard
+This metric only makes sense for the model with a constant decision function.
+\end_layout
+
 \begin_layout Section
 Results
+\end_layout
+
+\begin_layout Subsection
+Constant decision rule
 \end_layout
 
 \begin_layout Standard
@@ -2199,14 +2285,32 @@ status open
 \begin_layout Plain Layout
 a)
 \begin_inset Graphics
-	filename figures/main_results_simple_model_const.pdf
+	filename figures/main_results_simple_model_const_alpha_lb0.pdf
 	width 50text%
 
 \end_inset
 
 b)
 \begin_inset Graphics
-	filename figures/main_results_simple_model_adaptive.pdf
+	filename figures/main_results_simple_model_const_alpha_lb0.5.pdf
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+c)
+\begin_inset Graphics
+	filename figures/t_all_upriv_highpros_const_alpha_lb0.pdf
+	width 50text%
+
+\end_inset
+
+d)
+\begin_inset Graphics
+	filename figures/t_all_upriv_highpros_const_alpha_lb0.5.pdf
 	width 50text%
 
 \end_inset
@@ -2215,13 +2319,71 @@ b)
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Upper panels: time evolution of the between-group skill difference (mean
- skill of privileged group - mean skill of underprivileged group ), lower
- panels: time evolution of fraction of individuals in from the underprivileged
- group that are classified as belonging to the high-prospect group.
- a) with constant decision function, b) with adaptive decision function.All
- for unbiased labor market.
+Results for the model with constant decision function a,b: Upper panels:
+ time evolution of the between-group skill difference (mean skill of privileged
+ group - mean skill of underprivileged group )((
+\begin_inset Formula $BGSD_{eff}$
+\end_inset
+
+), lower panels: time evolution of fraction of individuals in from the underpriv
+ileged group that are classified as belonging to the high-prospect group.
+ c,d: time at which 100% of the underpriviliged group are classified as
+ 
+\begin_inset Quotes eld
+\end_inset
+
+high prospect
+\begin_inset Quotes erd
+\end_inset
+
+, split up by scenario (color) and modeltype (hatching).
+ a,c: results for 
+\begin_inset Quotes eld
+\end_inset
+
+fair
+\begin_inset Quotes erd
+\end_inset
+
+ labor markted (
+\begin_inset Formula $\alpha_{lb}=0$
+\end_inset
+
+), b,d: results for labor market biased against underpriviliged group (
+\begin_inset Formula $\alpha_{lb}=0.5$
+\end_inset
+
+)
 \end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+a)
+\begin_inset Graphics
+	filename figures/main_results_simple_model_adaptive_alpha_lb0.pdf
+	width 50text%
+
+\end_inset
+
+b)
+\begin_inset Graphics
+	filename figures/main_results_simple_model_adaptive_alpha_lb0.5.pdf
+	width 50text%
 
 \end_inset
 
@@ -2229,12 +2391,67 @@ Upper panels: time evolution of the between-group skill difference (mean
 \end_layout
 
 \begin_layout Plain Layout
+c)
+\begin_inset Graphics
+	filename figures/BGSD_eff_adaptive_alpha_lb0.pdf
+	width 50text%
+
+\end_inset
+
+d)
+\begin_inset Graphics
+	filename figures/BGSD_eff_adaptive_alpha_lb0.5.pdf
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Results for the model with adaptive decision function.
+ a,c: results for 
+\begin_inset Quotes eld
+\end_inset
+
+fair
+\begin_inset Quotes erd
+\end_inset
+
+ labor markted (
+\begin_inset Formula $\alpha_{lb}=0$
+\end_inset
+
+), b,d: results for labor market biased against underpriviliged group (
+\begin_inset Formula $\alpha_{lb}=0.5$
+\end_inset
+
+)c,d: between group skill difference of 
+\begin_inset Formula $s_{eff}$
+\end_inset
+
+(
+\begin_inset Formula $BGSD_{eff}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+
 
 \end_layout
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Adaptive decision rule
 \end_layout
 
 \begin_layout Section
