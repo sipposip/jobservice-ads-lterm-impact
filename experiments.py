@@ -1,9 +1,5 @@
 """
 
-to implement:
-* include option of having a biased labour-market. this would mean modifying the computation of s_real
- and make it partly dependent on x_pr
-
 """
 
 import os
@@ -47,13 +43,13 @@ def initialize_data(alpha_prot, maxval, alpha_lb):
         x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
     # the real skill is simply the mean of x1 and x2
     s_real, s_eff = compute_skill(x1, x2, x_prot, alpha_lb)
-    df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real, 's_eff':s_eff})
+    df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real, 's_eff': s_eff})
     return df
 
 
 def compute_skill(x1, x2, x_prot, alpha_lb):
     s_real = (x1 + x2) / 2
-    s_eff = s_real + alpha_lb * 2* (x_prot - 0.5) # factor to so that we get -1 and 1 from x_prot
+    s_eff = s_real + alpha_lb * 2 * (x_prot - 0.5)  # factor to so that we get -1 and 1 from x_prot
     return s_real, s_eff
 
 
@@ -132,7 +128,7 @@ def step_model(df, k_matrix, modeltype, alpha_lb):
     and update the dataframe"""
     df['x1'], df['x2'] = intervention_model(df['x1'], df['x2'], df['class'], df['class_pred'], k_matrix)
     # compute new real classes
-    s_real,s_eff = compute_skill(df['x1'], df['x2'], df['x_prot'], alpha_lb)
+    s_real, s_eff = compute_skill(df['x1'], df['x2'], df['x_prot'], alpha_lb)
     df['s_real'] = s_real
     df['s_eff'] = s_eff
     df['class'] = real_decision_function(df)
@@ -207,7 +203,7 @@ n = 1000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
 n_steps = 100
-alpha_lb = 0 # attention: if this is changed ,the data needs to be initialized again!
+alpha_lb = 0  # attention: if this is changed ,the data needs to be initialized again!
 decision_function = 'const'  # 'const' | 'adaptive'
 df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval, alpha_lb=alpha_lb)
 p = sns.jointplot(x='x1', y='x2', data=df_init, hue='x_prot')
@@ -299,7 +295,7 @@ for i, scenario in enumerate(exp_results):
 plt.legend()
 plt.ylabel('fraction of unprivileged \n group classified in better class')
 sns.despine()
-plt.suptitle(r'$\alpha_{pr}=$'+str(alpha_prot)+r' $\alpha_{lb}=$'+str(alpha_lb)+' modeltype='+modeltype)
+plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) + ' modeltype=' + modeltype)
 savefig(f'main_results_simple_model_{decision_function}_alpha_lb{alpha_lb}')
 
 # TODO: compute and plot the time it takes for s_group2 to reach 1 (in the constant decision function case)
