@@ -19,18 +19,18 @@ if not os.path.isdir(plotdir):
 
 
 def savefig(fname):
-    plt.savefig(plotdir + fname + '.png')
     plt.savefig(plotdir + fname + '.pdf')
     plt.savefig(plotdir + fname + '.svg')
 
 
-def initialize_data(alpha_prot, maxval, alpha_lb):
+def initialize_data(alpha_prot, maxval, alpha_lb, rand_seed=None):
     """
     generate the initial dataframe
     :param alpha_prot: how much alpha_prot influences x2
     :param maxval: if not None, truncated normal distributions are used, truncated at +-maxval
     :return: dataframe
     """
+    np.random.seed(rand_seed)
     # we have two skill features x1 and x2, and a protected feature x_prot
     # the protected feature is correlated with x2
     # we draw them from a truncated normal distribution if maxval is not None
@@ -148,7 +148,8 @@ def run_experiment(df_init, n_steps, k_matrix, modeltype, alpha_lb, plot=False):
     df_init = df  # for plotting later on
     for i in range(n_steps):
         df, coefs = step_model(df, k_matrix, modeltype, alpha_lb)
-        summary = pd.DataFrame({  # 'step':i,
+        # compute summary metrics on data
+        summary = {
             'x1_mean': df['x1'].mean(),
             'x2_mean': df['x2'].mean(),
             's_mean': df['s_real'].mean(),
@@ -156,14 +157,18 @@ def run_experiment(df_init, n_steps, k_matrix, modeltype, alpha_lb, plot=False):
             'x2_group1': df['x2'][df['x_prot'] == 0].mean(),
             'x1_group2': df['x1'][df['x_prot'] == 1].mean(),
             'x2_group2': df['x2'][df['x_prot'] == 1].mean(),
-            's_group1': df['s_real'][df['x_prot'] == 0].mean(),
-            's_group2': df['s_real'][df['x_prot'] == 1].mean(),
+            's_real_group1': df['s_real'][df['x_prot'] == 0].mean(),
+            's_real_group2': df['s_real'][df['x_prot'] == 1].mean(),
+            's_eff_group1': df['s_eff'][df['x_prot'] == 0].mean(),
+            's_eff_group2': df['s_eff'][df['x_prot'] == 1].mean(),
             'class2_group1': (df['class'][df['x_prot'] == 0]).mean(),
             'class2_group2': (df['class'][df['x_prot'] == 1]).mean(),
-        }, index=[i])
+        }
+        summary['BGSD_real'] = summary['s_real_group2'] - summary['s_real_group1']
+        summary['BGSD_eff'] = summary['s_eff_group2'] - summary['s_eff_group1']
         if modeltype == 'full':
             summary['coef2'] = coefs[0, 1],
-
+        summary = pd.DataFrame(summary, index=[i])
         res.append(df)
         res_summary.append(summary)
 
@@ -199,19 +204,21 @@ def run_experiment(df_init, n_steps, k_matrix, modeltype, alpha_lb, plot=False):
 
 
 # generate data
+rand_seed = 57654  # fixed random seed for reproducibility
 n = 1000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
-n_steps = 100
+n_steps = 600  # 600 for adaptive decision function, 100 for constant
 alpha_lb = 0  # attention: if this is changed ,the data needs to be initialized again!
-decision_function = 'const'  # 'const' | 'adaptive'
-df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval, alpha_lb=alpha_lb)
+decision_function = 'adaptive'  # 'const' | 'adaptive'
+df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval, alpha_lb=alpha_lb, rand_seed=rand_seed)
 p = sns.jointplot(x='x1', y='x2', data=df_init, hue='x_prot')
 savefig(f'initial_data_alpha_prot{alpha_prot}_maxval{maxval}')
 sns.displot(df_init, x='s_real', hue='x_prot')
 savefig(f'initial_data_alpha_prot{alpha_prot}_maxbal{maxval}_sreal')
 sns.displot(df_init, x='s_eff', hue='x_prot')
-savefig(f'initial_data_alpha_prot{alpha_prot}_maxbal{maxval}_s_eff')
+plt.title(r'$\alpha_{pr}=$' + str(alpha_prot))
+savefig(f'initial_data_alpha_prot{alpha_prot}_maxbal{maxval}_s_eff_alphalb_{alpha_lb}')
 
 # matrix with intervention parameters for the four cases (real class can be 1 or 2, and real class can be 1 or two)
 # [[real class 1 & pred class 1, real class 1 & pred class 2],
@@ -258,16 +265,31 @@ configs = [
 ]
 
 # run all experiments
-exp_results = {}
+exp_results = {}  # results per experiment
+# aggregated results (singl number for all timesteps), we will store it for all experiments in a single
+# dataframe,
+df_agg = pd.DataFrame()
 for config in configs:
     _res = {}
+    res_agg = {}
     for modeltype in 'full', 'base':
         res_summary, res = run_experiment(df_init, n_steps=n_steps, k_matrix=config['k_matrix'], modeltype=modeltype,
                                           alpha_lb=alpha_lb)
         _res[modeltype] = {**config, 'res_summary': res_summary,
                            'res': res}
 
-    exp_results[config['scenario']] = _res
+        # compute time after all underpriviliged are classified as high-prospect (and thus the fraction of
+        # underpvivilged classified as high prospect (class2_group1) reaches 1
+        if np.any(res_summary['class2_group1']) == 1:
+            # argmax returns the first True occurence
+            res_agg['t_all_upriv_highpros'] = np.argmax(res_summary['class2_group1'] == 1)
+        else:
+            # if we come here, thatn
+            res_agg['t_all_upriv_highpros'] = np.inf
+
+        exp_results[config['scenario']] = _res
+        df_agg = df_agg.append(
+            pd.DataFrame({'scenario': config['scenario'], **res_agg, 'modeltype': modeltype}, index=[0]))
 
 # -- plot results
 
@@ -276,15 +298,15 @@ for config in configs:
 # the experiments with the full models are plotted with continous, the experiments with the base model with dotted
 # lines
 plt.figure(figsize=(12, 8))
-plt.subplot(211)
 colors = sns.color_palette('colorblind', n_colors=7)
+plt.subplot(211)
 for i, scenario in enumerate(exp_results):
     data_base = exp_results[scenario]['base']['res_summary']
     data_full = exp_results[scenario]['full']['res_summary']
-    plt.plot(data_full['s_group2'] - data_full['s_group1'], label=scenario, linestyle='-', color=colors[i])
-    plt.plot(data_base['s_group2'] - data_base['s_group1'], linestyle='--', color=colors[i])
+    plt.plot(data_full['BGSD_real'], label=scenario, linestyle='-', color=colors[i])
+    plt.plot(data_base['BGSD_real'], linestyle='--', color=colors[i])
 plt.legend()
-plt.ylabel('between-group-skill-difference \n $S_{x_{pr}=1} - S_{x_{pr}=0}$')
+plt.ylabel('between-group-skill-difference real$')
 sns.despine()
 plt.subplot(212)
 for i, scenario in enumerate(exp_results):
@@ -295,7 +317,50 @@ for i, scenario in enumerate(exp_results):
 plt.legend()
 plt.ylabel('fraction of unprivileged \n group classified in better class')
 sns.despine()
-plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) + ' modeltype=' + modeltype)
+plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) +
+             'decision_func=' + decision_function)
 savefig(f'main_results_simple_model_{decision_function}_alpha_lb{alpha_lb}')
 
-# TODO: compute and plot the time it takes for s_group2 to reach 1 (in the constant decision function case)
+plt.figure(figsize=(7, 4))
+for i, scenario in enumerate(exp_results):
+    data_base = exp_results[scenario]['base']['res_summary']
+    data_full = exp_results[scenario]['full']['res_summary']
+    plt.plot(data_full['BGSD_eff'], label=scenario, linestyle='-', color=colors[i])
+    plt.plot(data_base['BGSD_eff'], linestyle='--', color=colors[i])
+plt.legend()
+plt.ylabel('between-group-skill-difference eff$')
+sns.despine()
+plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) +
+             'decision_func=' + decision_function)
+savefig(f'BGSD_eff_{decision_function}_alpha_lb{alpha_lb}')
+
+# bar plot with time it takes until all unpriviliged are high prospect
+# x axis is scenarios, and we want to color the scenarios the same way as in the other plots
+# to differentiate base and full model, we use different hatching.
+# this type of grouping is not directly implemented because we have qualitative x-balues
+# therefore, we first need to convert the x values to numeric, and then
+# label them again
+# https://stackoverflow.com/questions/48157735/plot-multiple-bars-for-categorical-data
+plt.figure(figsize=(7, 4))
+xvals = np.unique(df_agg['scenario'])
+_x = np.arange(len(xvals))
+# this approach is only valid if the order of the scenarios is the same for both model types (which
+# is the case here if nothing is changed above, but we check it anyway)
+assert(np.array_equal(df_agg['scenario'][df_agg['modeltype']=='base'], df_agg['scenario'][df_agg['modeltype']=='full']))
+width = 0.4
+plt.bar(_x-width/2,
+        df_agg['t_all_upriv_highpros'][df_agg['modeltype'] == 'base'],
+        width=width, color=colors, hatch='//', label='base')
+plt.bar(_x+width/2,
+        df_agg['t_all_upriv_highpros'][df_agg['modeltype'] == 'full'],
+        width=width, color=colors, hatch='--', label='full')
+plt.xticks(_x, xvals)
+plt.legend()
+
+plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) +
+             'decision_func=' + decision_function)
+sns.despine()
+plt.xlabel('scenario')
+plt.ylabel('time until all underpriviliged are high prospect')
+plt.tight_layout()
+savefig(f't_all_upriv_highpros_{decision_function}_alpha_lb{alpha_lb}')
