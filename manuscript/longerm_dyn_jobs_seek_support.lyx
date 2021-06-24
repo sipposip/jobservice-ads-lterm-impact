@@ -281,6 +281,28 @@ not fair
 \end_layout
 
 \begin_layout Standard
+We use the concept of 
+\begin_inset Quotes eld
+\end_inset
+
+labor-market-models
+\begin_inset Quotes erd
+\end_inset
+
+ in a way that is very targeted towards our research question, and it should
+ not be confused with labor market models from economics, which usually
+ are used to study supply and demand of labor (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "goetzLaborMarketTheory2014"
+literal "false"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
 btprint "btPrintCited"
@@ -368,6 +390,57 @@ In addition, each individual has a binary protected attribute
 
 .
  
+\end_layout
+
+\begin_layout Standard
+We draw 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ from truncated normal distributions.
+ Normal distributions because personal features such as 
+\begin_inset Quotes eld
+\end_inset
+
+talent
+\begin_inset Quotes erd
+\end_inset
+
+ are usually assumed to be normally distributed (e.g.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "biondoTalentVsLuck2018"
+literal "false"
+
+\end_inset
+
+).
+ A truncated normal distribution is used instead of an untrancated one to
+ ensure that no one has 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and/or 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ higher than the maximum reachable values in the intervention model (see
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Intervention-Model"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
 \end_layout
 
 \begin_layout Standard
@@ -955,6 +1028,12 @@ adaptive
 \end_layout
 
 \begin_layout Subsubsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Intervention-Model"
+
+\end_inset
+
 Intervention Model
 \end_layout
 
@@ -2277,6 +2356,21 @@ Constant decision rule
 \end_layout
 
 \begin_layout Standard
+Results with constant decision rule are shown in fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:res-const"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -2319,6 +2413,12 @@ d)
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:res-const"
+
+\end_inset
+
 Results for the model with constant decision function a,b: Upper panels:
  time evolution of the between-group skill difference (mean skill of privileged
  group - mean skill of underprivileged group )((
@@ -2364,6 +2464,25 @@ fair
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Adaptive decision rule
+\end_layout
+
+\begin_layout Standard
+Results with constant decision rule are shown in fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "res-adaptive"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -2412,6 +2531,12 @@ d)
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "res-adaptive"
+
+\end_inset
+
 Results for the model with adaptive decision function.
  a,c: results for 
 \begin_inset Quotes eld
@@ -2450,10 +2575,6 @@ fair
 
 \end_layout
 
-\begin_layout Subsection
-Adaptive decision rule
-\end_layout
-
 \begin_layout Section
 Discussion and conclusion
 \end_layout
@@ -2469,7 +2590,23 @@ decision support
 
 , and the decision by the model is only input to a human? It is known that
  humans tend to rely on such systems (https://journals.sagepub.com/doi/10.1518/0018
-72097778543886)
+72097778543886).
+\end_layout
+
+\begin_layout Standard
+We assume that success on the labor market is based solely on the individual
+ skill, and that observations of the labor market (e.g.
+ who finds a job) are thus a measure of skill.
+ In reality, this view has been challenged fundamentally, as luck is a much
+ more important ingredient for success than individual talent (see 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "blattnerHowCostlyNoise2021"
+literal "false"
+
+\end_inset
+
+ and references therein).
 \end_layout
 
 \begin_layout Subsection*
