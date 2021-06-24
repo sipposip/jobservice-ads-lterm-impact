@@ -1,4 +1,7 @@
 """
+implementation of the simple model described in the manuscript.
+
+Author: Sebastian Scher (sscher@know-center.at)
 
 """
 
