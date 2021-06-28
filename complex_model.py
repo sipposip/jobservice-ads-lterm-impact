@@ -94,53 +94,55 @@ maxval = 2
 n_spinup = 50
 T_w_max = 1
 # 1 generate initial data
-df = draw_data_from_influx(n_population, alpha_prot, maxval)
+df_active = draw_data_from_influx(n_population, alpha_prot, maxval)
 # initialize empty historical data
-hist = pd.DataFrame()
+df_hist = pd.DataFrame()
 df_waiting = pd.DataFrame()
 
-for step in range(55):
+for step in range(100):
     print(step)
-    df_found_job, df_remains_workless = assign_jobs(df)
+    df_found_job, df_remains_workless = assign_jobs(df_active)
     n_found_job, n_remains_workless = len(df_found_job), len(df_remains_workless)
     # update historical data
-    # for _, e in df_found_job.iterrows():
-    #     hist.append(e[['x1', 'x2', 'T_u']].values)
-    hist = update_historical_data(hist, df_found_job)
+    df_hist = update_historical_data(df_hist, df_found_job)
     # increase T_u of the ones that remained workless
     df_remains_workless['T_u'] = df_remains_workless['T_u'] + 1
 
     if step > n_spinup:
-        model = train_model(hist)
+        model = train_model(df_hist)
         # group the current jobless people into the two groups
         classes = model.predict(df_remains_workless[['x1', 'x_prot']])
-        # this is now a DataFrame, we need the raw data
         df_highpros = df_remains_workless[classes == 1].copy()
         df_lowpros = df_remains_workless[classes == 0].copy()
         n_highpros, n_lowpros = len(df_highpros), len(df_lowpros)
+        assert(len(df_highpros)+len(df_lowpros)==len(df_remains_workless))
 
+        # TODO
+        # implement intervention modle here
+        # END TOOO
+
+        df_remains_workless = df_highpros
         # for the lowpros group, we need a new attribute that describes how long they are already
         # in the waiting position, which starts at 0
         df_lowpros['T_w'] = 0
         # move the ones that reached the final time in the waiting group to the normal
         # job seeker group
         if len(df_waiting) > 0:
-            df_back_idcs = df_waiting.index[df_waiting['T_w'] == T_w_max]
-            df_back = df_waiting.iloc[df_back_idcs]
-            df_waiting = df_waiting.drop(df_back_idcs)
+            df_back_idcs = df_waiting['T_w'] == T_w_max
+            df_back = df_waiting[df_back_idcs]
+            df_waiting = df_waiting[~df_back_idcs]
             if len(df_back) > 0:
                 df_back = df_back.drop(columns='T_w')
                 df_remains_workless = pd.concat([df_remains_workless, df_back])
             df_waiting['T_w'] = df_waiting['T_w'] + 1
 
         df_waiting = pd.concat([df_waiting, df_lowpros])
-        df_remains_workless = df_highpros
         n_waiting = len(df_waiting)
         print(n_waiting)
     # draw new people from influx to replace the ones that found a job
     df_new = draw_data_from_influx(n_found_job, alpha_prot, maxval)
-    df = pd.concat([df_remains_workless, df_new], axis=0)
-    assert(len(df)+len(df_waiting)==n_population)
+    df_active = pd.concat([df_remains_workless, df_new], axis=0)
+    print(f'active:{len(df_active)} waiting:{len(df_waiting)} ')
+    assert(len(df_active)+len(df_waiting)==n_population)
 
-# TODO: problem: there is a problem with moving  poeple around, the last assert statement crashes
-# sns.jointplot('x1', 'T_u', data=df_hist)
+sns.jointplot('x1', 'T_u', data=df_hist)
