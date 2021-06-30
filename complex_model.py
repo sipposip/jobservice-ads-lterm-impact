@@ -112,10 +112,10 @@ def predict(df, model, modeltype):
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
 np.random.seed(rand_seed)
-n_population = 10000
+n_population = 1000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
-tsteps = 500  # steps after spinup
+tsteps = 4000  # steps after spinup
 n_spinup = 1000
 n_retain_from_spinup = 200
 delta_T_u = 10
@@ -129,7 +129,11 @@ jobmarket_function_scale = 10
 # that something is a pool
 df_active = draw_data_from_influx(n_population, alpha_prot, maxval)
 # initialize empty data pools data
-df_hist = pd.DataFrame()
+n_hist_max = n_population * (tsteps + n_retain_from_spinup)
+# for the history, we make a dataframe of fixed (large) datasize because extending dataframes is so slow in python
+# we fill it with nans, and then slowly fill it up with data
+df_hist = pd.DataFrame(np.nan,index=np.arange(n_hist_max), columns=['x1','x2','x_prot','s_real','T_u','step'])
+
 df_waiting = pd.DataFrame()
 n_waiting = len(df_waiting)
 model_evolution = []
@@ -141,9 +145,11 @@ for step in trange(n_spinup + tsteps):
     # assign jobs
     df_found_job, df_remains_workless = assign_jobs(df_active, jobmarket_function_loc, jobmarket_function_scale)
     n_found_job, n_remains_workless = len(df_found_job), len(df_remains_workless)
-    # update historical data
     df_found_job['step'] = step
-    df_hist = pd.concat([df_hist, df_found_job], axis=0)
+    # update historical data
+    # find first free row and append from there on
+    start_idx = np.argmax(df_hist['x1'].isna())
+    df_hist.iloc[start_idx:start_idx+len(df_found_job)] = df_found_job
     # increase T_u of the ones that remained workless
     df_remains_workless['T_u'] = df_remains_workless['T_u'] + 1
 
@@ -151,7 +157,7 @@ for step in trange(n_spinup + tsteps):
     if step == n_spinup-1:
         df_hist_start = df_hist.copy()
         model_evolution_start = model_evolution[:]
-        df_hist = df_hist[df_hist['step'].gt(n_spinup -  n_retain_from_spinup)]
+        df_hist = df_hist.iloc[np.argmax(df_hist['step']==n_spinup -  n_retain_from_spinup):]
         model_evolution = model_evolution[-n_retain_from_spinup:]
 
     # remove individuals with T_u > T_u_max
@@ -160,7 +166,8 @@ for step in trange(n_spinup + tsteps):
     df_remains_workless = df_remains_workless[~idx_remove]
     if step > n_spinup:
         # train model on all accumulated historical data
-        model = train_model(df_hist, modeltype, class_boundary)
+        df_hist_nonan = df_hist.iloc[:np.argmax(df_hist.x1.isna())]
+        model = train_model(df_hist_nonan, modeltype, class_boundary)
         # group the current jobless people into the two groups
         classes = predict(df_remains_workless, model, modeltype)
         classes_true = compute_class(df_remains_workless, class_boundary)
