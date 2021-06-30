@@ -80,8 +80,7 @@ def assign_jobs(df, loc, scale):
 
 
 def compute_class(df, class_boundary):
-    # return (df['T_u'] > class_boundary).astype(int)
-    return [1 if e>class_boundary else 0 for e in df['T_u']]
+    return (df['T_u'] > class_boundary).astype(int)
 
 
 def train_model(df, modeltype, class_boundary):
@@ -89,11 +88,11 @@ def train_model(df, modeltype, class_boundary):
         train a logistic regression model
         for now, the classes are defined as below and above mean T_u in the training data
     """
+    T_u = df['T_u']
     if modeltype == 'full':
-        # X = np.array([df['x1'], df['x_prot']]).T
-        X = [[df['x1'][i],df['x2'][i]] for i in range(len(df['x1']))]
+        X = df[['x1', 'x_prot']]
     elif modeltype == 'base':
-        X = df['x1']
+        X = df[['x1']]
     classes = compute_class(df, class_boundary)
     return linear_model.LogisticRegression().fit(X, classes)
 
@@ -130,7 +129,7 @@ jobmarket_function_scale = 10
 # that something is a pool
 df_active = draw_data_from_influx(n_population, alpha_prot, maxval)
 # initialize empty data pools data
-df_hist = {'x1': [], 'x2': [], 'x_prot': [], 's_real': [], 'T_u': [], 'step': []}
+df_hist = pd.DataFrame()
 df_waiting = pd.DataFrame()
 n_waiting = len(df_waiting)
 model_evolution = []
@@ -144,21 +143,20 @@ for step in trange(n_spinup + tsteps):
     n_found_job, n_remains_workless = len(df_found_job), len(df_remains_workless)
     # update historical data
     df_found_job['step'] = step
-    if step > n_spinup - n_remains_workless:
-        for var in df_found_job:
-            df_hist[var].extend(df_found_job[var])
-        #df_hist = pd.concat([df_hist, df_found_job], axis=0)
+    df_hist = pd.concat([df_hist, df_found_job], axis=0)
     # increase T_u of the ones that remained workless
     df_remains_workless['T_u'] = df_remains_workless['T_u'] + 1
 
     # at end of spinup, crop the history
-    if step == n_spinup - 1:
+    if step == n_spinup-1:
+        df_hist_start = df_hist.copy()
         model_evolution_start = model_evolution[:]
+        df_hist = df_hist[df_hist['step'].gt(n_spinup -  n_retain_from_spinup)]
         model_evolution = model_evolution[-n_retain_from_spinup:]
 
     # remove individuals with T_u > T_u_max
-    idx_remove = df_remains_workless['T_u'] > T_u_max
-    n_removed = sum(idx_remove)  # idx_remove is a boolean index, so sum gives the number of Trues
+    idx_remove = df_remains_workless['T_u']>T_u_max
+    n_removed = sum(idx_remove) # idx_remove is a boolean index, so sum gives the number of Trues
     df_remains_workless = df_remains_workless[~idx_remove]
     if step > n_spinup:
         # train model on all accumulated historical data
@@ -209,7 +207,7 @@ for step in trange(n_spinup + tsteps):
         precision = np.nan
         recall = np.nan
     # draw new people from influx to replace the ones that found a job
-    df_new = draw_data_from_influx(n_found_job + n_removed, alpha_prot, maxval)
+    df_new = draw_data_from_influx(n_found_job+n_removed, alpha_prot, maxval)
     df_active = pd.concat([df_remains_workless, df_new], axis=0)
     n_active = len(df_active)
     assert (n_active + n_waiting == n_population)
@@ -224,12 +222,14 @@ for step in trange(n_spinup + tsteps):
 
 model_evolution = pd.concat(model_evolution)
 
+
 # plot jobmarket probability function
 plt.figure()
-x = np.linspace(-3, 3, 100)
-plt.plot(x, special.expit(x * jobmarket_function_scale - jobmarket_function_loc))
+x = np.linspace(-3,3,100)
+plt.plot(x,special.expit(x* jobmarket_function_scale - jobmarket_function_loc))
 plt.xlabel('s_real')
 plt.ylabel('P finding a job')
+
 
 sns.jointplot('x1', 'T_u', data=df_hist)
 
@@ -243,11 +243,12 @@ sns.boxplot(x='step', y='T_u', data=df_hist, showfliers=False)
 plt.subplot(313)
 sns.lineplot(x='step', y='T_u', data=df_hist, ci=None)
 
+
 model_evolution[['accuracy', 'recall', 'precision']].plot()
 plt.ylabel('accuracy')
 
 tmean_until_job = df_hist.groupby('step')['T_u'].mean()
-tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
+tmean_until_job_cumulative = np.cumsum(tmean_until_job)/np.arange(len(tmean_until_job))
 
 plt.figure()
 plt.subplot(211)
