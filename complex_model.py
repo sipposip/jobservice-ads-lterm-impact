@@ -14,8 +14,16 @@ model parameters:
     delta_T_u: time an individual spends in the lowprospect waiting group
 
 
-TODO:
-speed up!
+performance topics:
+    the model needs a data structure (the history) that grows with every timestep, but in an unpredictable way.
+    This is something that cannot be done efficiently with numpy arrays or pandas dataframes.
+    In principle one could use standard python lists for this (which can be grown dynamically with reasonable
+    speed and memory requirements), but here this is not an option, because at every timestep we need the history
+    as input for the training of the logistic regression, and for this it needs to be an array or dataframe.
+    if we were to convert the dynamic list before training at every timestep we would loose the speed increase.
+    Therefore, I chose to use dataframes anyway, and  "append" to them, which unfortunately means that the old
+    data is copied to the new extended dataframe all the time.
+    Therefore, with every timestep, as the history is growing, the simulation gets slower and slower
 
 """
 
@@ -80,6 +88,7 @@ def assign_jobs(df, loc, scale):
 
 
 def compute_class(df, class_boundary):
+    """compute lowpros (0) and highpros (1) class"""
     return (df['T_u'] > class_boundary).astype(int)
 
 
@@ -88,7 +97,6 @@ def train_model(df, modeltype, class_boundary):
         train a logistic regression model
         for now, the classes are defined as below and above mean T_u in the training data
     """
-    T_u = df['T_u']
     if modeltype == 'full':
         X = df[['x1', 'x_prot']]
     elif modeltype == 'base':
@@ -112,11 +120,11 @@ def predict(df, model, modeltype):
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
 np.random.seed(rand_seed)
-n_population = 1000
+n_population = 10000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
-tsteps = 4000  # steps after spinup
-n_spinup = 1000
+tsteps = 400  # steps after spinup
+n_spinup = 400
 n_retain_from_spinup = 200
 delta_T_u = 10
 T_u_max = 100
@@ -202,6 +210,7 @@ for step in trange(n_spinup + tsteps):
             df_waiting = df_waiting[~df_back_idcs]
             if len(df_back) > 0:
                 df_back = df_back.drop(columns='T_w')
+                df_back['T_u']+=delta_T_u
                 df_remains_workless = pd.concat([df_remains_workless, df_back])
             df_waiting['T_w'] = df_waiting['T_w'] + 1
 
