@@ -14,6 +14,8 @@ model parameters:
     delta_T_u: time an individual spends in the lowprospect waiting group
 
 
+TODO: implement intervention model and scenarios (can basically be copied from simple model)
+
 performance topics:
     the model needs a data structure (the history) that grows with every timestep, but in an unpredictable way.
     This is something that cannot be done efficiently with numpy arrays or pandas dataframes.
@@ -21,10 +23,8 @@ performance topics:
     speed and memory requirements), but here this is not an option, because at every timestep we need the history
     as input for the training of the logistic regression, and for this it needs to be an array or dataframe.
     if we were to convert the dynamic list before training at every timestep we would loose the speed increase.
-    Therefore, I chose to use dataframes anyway, and  "append" to them, which unfortunately means that the old
-    data is copied to the new extended dataframe all the time.
-    Therefore, with every timestep, as the history is growing, the simulation gets slower and slower
-
+    Therefore, I chose to use dataframes anyway, and partly circumvent the problems by creating
+    a dataframe filled with nans with the maximum possible size that can happen in the simulation
 """
 
 import os
@@ -126,8 +126,8 @@ maxval = 2
 tsteps = 400  # steps after spinup
 n_spinup = 400
 n_retain_from_spinup = 200
-delta_T_u = 10
-T_u_max = 100
+delta_T_u = 10   # time lowpros are withdrawn from active group
+T_u_max = 100 # time after which workless individuals leave the system automatically
 modeltype = 'full'
 class_boundary = 40  # in time-units
 jobmarket_function_loc = 0
@@ -140,7 +140,7 @@ df_active = draw_data_from_influx(n_population, alpha_prot, maxval)
 n_hist_max = n_population * (tsteps + n_retain_from_spinup)
 # for the history, we make a dataframe of fixed (large) datasize because extending dataframes is so slow in python
 # we fill it with nans, and then slowly fill it up with data
-df_hist = pd.DataFrame(np.nan,index=np.arange(n_hist_max), columns=['x1','x2','x_prot','s_real','T_u','step'])
+df_hist = pd.DataFrame(np.nan, index=np.arange(n_hist_max), columns=['x1', 'x2', 'x_prot', 's_real', 'T_u', 'step'])
 
 df_waiting = pd.DataFrame()
 n_waiting = len(df_waiting)
@@ -157,20 +157,20 @@ for step in trange(n_spinup + tsteps):
     # update historical data
     # find first free row and append from there on
     start_idx = np.argmax(df_hist['x1'].isna())
-    df_hist.iloc[start_idx:start_idx+len(df_found_job)] = df_found_job
+    df_hist.iloc[start_idx:start_idx + len(df_found_job)] = df_found_job
     # increase T_u of the ones that remained workless
     df_remains_workless['T_u'] = df_remains_workless['T_u'] + 1
 
     # at end of spinup, crop the history
-    if step == n_spinup-1:
+    if step == n_spinup - 1:
         df_hist_start = df_hist.copy()
         model_evolution_start = model_evolution[:]
-        df_hist = df_hist.iloc[np.argmax(df_hist['step']==n_spinup -  n_retain_from_spinup):]
+        df_hist = df_hist.iloc[np.argmax(df_hist['step'] == n_spinup - n_retain_from_spinup):]
         model_evolution = model_evolution[-n_retain_from_spinup:]
 
     # remove individuals with T_u > T_u_max
-    idx_remove = df_remains_workless['T_u']>T_u_max
-    n_removed = sum(idx_remove) # idx_remove is a boolean index, so sum gives the number of Trues
+    idx_remove = df_remains_workless['T_u'] > T_u_max
+    n_removed = sum(idx_remove)  # idx_remove is a boolean index, so sum gives the number of Trues
     df_remains_workless = df_remains_workless[~idx_remove]
     if step > n_spinup:
         # train model on all accumulated historical data
@@ -194,36 +194,41 @@ for step in trange(n_spinup + tsteps):
         # implement intervention model here
         # END TOOO
 
-        # for the lowpros group, we need a new attribute that describes how long they are already
-        # in the waiting position, which starts at 0
-        df_lowpros['T_w'] = 0
 
-        # only the highpros are retained, they will be complemented by the ones from
-        # the waiting pool and by new ones later on
-        df_remains_workless = df_highpros
-        # move the ones that reached the final time in the waiting group to the normal
-        # job seeker group
+        if delta_T_u > 0:
+            # for the lowpros group, we need a new attribute that describes how long they are already
+            # in the waiting position, which starts at 0
+            df_lowpros['T_w'] = 0
 
-        if n_waiting > 0:
-            df_back_idcs = df_waiting['T_w'] == delta_T_u
-            df_back = df_waiting[df_back_idcs]
-            df_waiting = df_waiting[~df_back_idcs]
-            if len(df_back) > 0:
-                df_back = df_back.drop(columns='T_w')
-                df_back['T_u']+=delta_T_u
-                df_remains_workless = pd.concat([df_remains_workless, df_back])
-            df_waiting['T_w'] = df_waiting['T_w'] + 1
+            # only the highpros are retained, they will be complemented by the ones from
+            # the waiting pool and by new ones later on
+            df_remains_workless = df_highpros
+            # move the ones that reached the final time in the waiting group to the normal
+            # job seeker group
+            if n_waiting > 0:
+                df_back_idcs = df_waiting['T_w'] == delta_T_u
+                df_back = df_waiting[df_back_idcs]
+                df_waiting = df_waiting[~df_back_idcs]
+                if len(df_back) > 0:
+                    df_back = df_back.drop(columns='T_w')
+                    df_back['T_u'] += delta_T_u
+                    df_remains_workless = pd.concat([df_remains_workless, df_back])
+                df_waiting['T_w'] = df_waiting['T_w'] + 1
 
-        # add the new lowprps to the waiting group
-        df_waiting = pd.concat([df_waiting, df_lowpros])
-        n_waiting = len(df_waiting)
+            # add the new lowprps to the waiting group
+            df_waiting = pd.concat([df_waiting, df_lowpros])
+            n_waiting = len(df_waiting)
+        else:
+            # in case there is no waiting time for the lowpros, all go together in the
+            # gorup with workless
+            df_remains_workless = pd.concat([df_highpros, df_lowpros])
     else:
         # set values to be used in the record during the spinup pahse
         accur = np.nan
         precision = np.nan
         recall = np.nan
     # draw new people from influx to replace the ones that found a job
-    df_new = draw_data_from_influx(n_found_job+n_removed, alpha_prot, maxval)
+    df_new = draw_data_from_influx(n_found_job + n_removed, alpha_prot, maxval)
     df_active = pd.concat([df_remains_workless, df_new], axis=0)
     n_active = len(df_active)
     assert (n_active + n_waiting == n_population)
@@ -237,15 +242,14 @@ for step in trange(n_spinup + tsteps):
     }, index=[step]))
 
 model_evolution = pd.concat(model_evolution)
-
-
+# remove tha tail with NaNs
+df_hist = df_hist.dropna()
 # plot jobmarket probability function
 plt.figure()
-x = np.linspace(-3,3,100)
-plt.plot(x,special.expit(x* jobmarket_function_scale - jobmarket_function_loc))
+x = np.linspace(-3, 3, 100)
+plt.plot(x, special.expit(x * jobmarket_function_scale - jobmarket_function_loc))
 plt.xlabel('s_real')
 plt.ylabel('P finding a job')
-
 
 sns.jointplot('x1', 'T_u', data=df_hist)
 
@@ -259,12 +263,11 @@ sns.boxplot(x='step', y='T_u', data=df_hist, showfliers=False)
 plt.subplot(313)
 sns.lineplot(x='step', y='T_u', data=df_hist, ci=None)
 
-
 model_evolution[['accuracy', 'recall', 'precision']].plot()
 plt.ylabel('accuracy')
 
 tmean_until_job = df_hist.groupby('step')['T_u'].mean()
-tmean_until_job_cumulative = np.cumsum(tmean_until_job)/np.arange(len(tmean_until_job))
+tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
 
 plt.figure()
 plt.subplot(211)
