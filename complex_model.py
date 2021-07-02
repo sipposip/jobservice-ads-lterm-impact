@@ -88,8 +88,8 @@ def assign_jobs(df, loc, scale):
 
 
 def compute_class(df, class_boundary):
-    """compute lowpros (0) and highpros (1) class"""
-    return (df['T_u'] > class_boundary).astype(int)
+    """compute lowpros (1) and highpros (0) class"""
+    return (df['T_u'] < class_boundary).astype(int)
 
 
 def train_model(df, modeltype, class_boundary):
@@ -117,6 +117,41 @@ def predict(df, model, modeltype):
     return model.predict(X)
 
 
+def intervention_model(x1, x2, real_class, pred_class, k_matrix):
+    """
+        update features based on intervention models. works with scalars and vectors
+    """
+    # in order to have the values in the k_matrix in a nicer format/scale, we
+    # multiply it by a constant factor.
+    scale_factor = 1 / 50
+    k_matrix = k_matrix * scale_factor
+    # we have four parameters, for four cases (real class can be 1 or 2, and real class can be 1 or two)
+    k_rcl1_pcl1 = k_matrix[0, 0]
+    k_rcl1_pcl2 = k_matrix[0, 1]
+    k_rcl2_pcl1 = k_matrix[1, 0]
+    k_rcl2_pcl2 = k_matrix[1, 1]
+    x1_max = 2
+    x2_max = 2
+    # make an array with k values for the correct real_class - pred_class combination, then we can use
+    # vector operations and avoid a slow for loop
+    kvec = np.zeros_like(x1)
+    kvec[(real_class == 0) & (pred_class == 0)] = k_rcl1_pcl1
+    kvec[(real_class == 0) & (pred_class == 1)] = k_rcl1_pcl2
+    kvec[(real_class == 1) & (pred_class == 0)] = k_rcl2_pcl1
+    kvec[(real_class == 1) & (pred_class == 1)] = k_rcl2_pcl2
+
+    # if x1 or x2 are already above the maximum value that the intervention model can attain,
+    # then we do not change them (otherwise they would be reduced when using the same formula)
+    # in vector formulation we can achieve this with the np.maximum function (and not the np.max function)
+    x1_new = np.maximum(x1 + (x1_max - x1) * kvec, x1)
+    x2_new = np.maximum(x2 + (x2_max - x2) * kvec, x2)
+
+    return x1_new, x2_new
+
+
+k_matrix = np.array([[1, 1],
+                     [1, 1]])
+
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
 np.random.seed(rand_seed)
@@ -126,8 +161,8 @@ maxval = 2
 tsteps = 400  # steps after spinup
 n_spinup = 400
 n_retain_from_spinup = 200
-delta_T_u = 10   # time lowpros are withdrawn from active group
-T_u_max = 100 # time after which workless individuals leave the system automatically
+delta_T_u = 10  # time lowpros are withdrawn from active group
+T_u_max = 100  # time after which workless individuals leave the system automatically
 modeltype = 'full'
 class_boundary = 40  # in time-units
 jobmarket_function_loc = 0
@@ -177,23 +212,20 @@ for step in trange(n_spinup + tsteps):
         df_hist_nonan = df_hist.iloc[:np.argmax(df_hist.x1.isna())]
         model = train_model(df_hist_nonan, modeltype, class_boundary)
         # group the current jobless people into the two groups
-        classes = predict(df_remains_workless, model, modeltype)
+        classes_pred = predict(df_remains_workless, model, modeltype)
         classes_true = compute_class(df_remains_workless, class_boundary)
-        accur = metrics.accuracy_score(classes_true, classes)
-        recall = metrics.recall_score(classes_true, classes)
-        precision = metrics.precision_score(classes_true, classes)
-        # here we deviate from the terminology used for the simple model.
-        # since the ml-model is based on predicting the unemployment time, class 1 indicates
-        # the low-prospect group (long expected unemployment time)
-        df_highpros = df_remains_workless[classes == 0].copy()
-        df_lowpros = df_remains_workless[classes == 1].copy()
+        accur = metrics.accuracy_score(classes_true, classes_pred)
+        recall = metrics.recall_score(classes_true, classes_pred)
+        precision = metrics.precision_score(classes_true, classes_pred)
+
+        df_upd = df_remains_workless
+        df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
+                                                        classes_pred, k_matrix)
+
+        df_highpros = df_upd[classes_pred == 1].copy()
+        df_lowpros = df_upd[classes_pred == 0].copy()
         n_highpros, n_lowpros = len(df_highpros), len(df_lowpros)
-        assert (len(df_highpros) + len(df_lowpros) == len(df_remains_workless))
-
-        # TODO
-        # implement intervention model here
-        # END TOOO
-
+        assert (len(df_highpros) + len(df_lowpros) == len(df_upd))
 
         if delta_T_u > 0:
             # for the lowpros group, we need a new attribute that describes how long they are already
