@@ -13,9 +13,6 @@ features of individuals:
 model parameters:
     delta_T_u: time an individual spends in the lowprospect waiting group
 
-
-TODO: implement intervention model and scenarios (can basically be copied from simple model)
-
 performance topics:
     the model needs a data structure (the history) that grows with every timestep, but in an unpredictable way.
     This is something that cannot be done efficiently with numpy arrays or pandas dataframes.
@@ -149,8 +146,8 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     return x1_new, x2_new
 
 
-k_matrix = np.array([[1, 1],
-                     [1, 1]])
+k_matrix = np.array([[0.1, 0.1],
+                     [0.1, 0.1]])
 
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
@@ -161,12 +158,12 @@ maxval = 2
 tsteps = 400  # steps after spinup
 n_spinup = 400
 n_retain_from_spinup = 200
-delta_T_u = 10  # time lowpros are withdrawn from active group
+delta_T_u = 5  # time lowpros are withdrawn from active group
 T_u_max = 100  # time after which workless individuals leave the system automatically
 modeltype = 'full'
 class_boundary = 40  # in time-units
 jobmarket_function_loc = 0
-jobmarket_function_scale = 10
+jobmarket_function_scale = 6
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
 # that something is a pool
@@ -264,53 +261,73 @@ for step in trange(n_spinup + tsteps):
     df_active = pd.concat([df_remains_workless, df_new], axis=0)
     n_active = len(df_active)
     assert (n_active + n_waiting == n_population)
+    df_active_and_waiting = pd.concat([df_active, df_waiting], axis=0)
     model_evolution.append(pd.DataFrame({
         'n_active': n_active,
         'n_waiting': n_waiting,
         'n_found_jobs': n_found_job,
         'accuracy': accur,
         'recall': recall,
-        'precision': precision
+        'precision': precision,
+        's_all': np.mean(df_active_and_waiting['s_real']),
+        's_priv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 1]),
+        's_upriv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 0]),
     }, index=[step]))
 
 model_evolution = pd.concat(model_evolution)
 # remove tha tail with NaNs
 df_hist = df_hist.dropna()
-# plot jobmarket probability function
+
+
 plt.figure()
+# plot jobmarket probability function
 x = np.linspace(-3, 3, 100)
 plt.plot(x, special.expit(x * jobmarket_function_scale - jobmarket_function_loc))
 plt.xlabel('s_real')
 plt.ylabel('P finding a job')
 
-sns.jointplot('x1', 'T_u', data=df_hist)
-
-model_evolution.plot()
-
-plt.figure()
-plt.subplot(311)
-sns.boxplot(x='step', y='T_u', data=df_hist, fliersize=1)
-plt.subplot(312)
-sns.boxplot(x='step', y='T_u', data=df_hist, showfliers=False)
-plt.subplot(313)
-sns.lineplot(x='step', y='T_u', data=df_hist, ci=None)
-
-model_evolution[['accuracy', 'recall', 'precision']].plot()
-plt.ylabel('accuracy')
-
-tmean_until_job = df_hist.groupby('step')['T_u'].mean()
-tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
-
-plt.figure()
-plt.subplot(211)
-plt.plot(tmean_until_job)
-sns.despine()
-plt.ylabel('mean T_u at this step')
-plt.subplot(212)
-plt.plot(tmean_until_job_cumulative)
-sns.despine()
-plt.ylabel('cumulative mean T_u')
-plt.xlabel('t')
-
+# plot distribution of T_u at the end of the history (so the
+# distribution of T_u of the individuals who found a job a the last timestep)
 df_hist_end_of_spinup = df_hist[df_hist['step'].between(n_spinup - 10, n_spinup)]
 sns.displot(df_hist_end_of_spinup['T_u'])
+sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
+# plot the relation ov x1 and T_u over the whole period
+sns.jointplot('x1', 'T_u', data=df_hist)
+
+
+sns.jointplot('x1', 'T_u', data=df_hist[df_hist['step']==df_hist['step'].max()])
+
+
+
+tmean_until_job = df_hist.groupby('step')['T_u'].mean()
+tmean_until_job_priv = df_hist[df_hist['x_prot'] == 1].groupby('step')['T_u'].mean()
+tmean_until_job_upriv = df_hist[df_hist['x_prot'] == 0].groupby('step')['T_u'].mean()
+tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
+
+
+plt.figure(figsize=(6.4,6.4))
+ax1 = plt.subplot(411)
+plt.plot(tmean_until_job, label='all')
+plt.plot(tmean_until_job_priv, label='priv')
+plt.plot(tmean_until_job_upriv, label='upriv')
+plt.legend()
+plt.ylabel('T_u')
+sns.despine()
+ax = plt.subplot(412)
+model_evolution[['accuracy', 'recall', 'precision']].plot(ax=ax)
+# since accuracy, recall and precision start with NANs, the plotting
+# function omits them and starts the xasis only at the first valid value
+# therfore we have to set the xlims
+plt.xlim(*ax1.get_xlim())
+sns.despine()
+ax = plt.subplot(413)
+model_evolution[['s_all', 's_priv', 's_upriv']].plot(ax=ax)
+sns.despine()
+plt.ylabel('$s_{real}$')
+plt.xlabel('time')
+ax = plt.subplot(414)
+plt.plot(tmean_until_job_cumulative)
+sns.despine()
+plt.ylabel('cumulative T_u')
+plt.xlabel('t')
+
