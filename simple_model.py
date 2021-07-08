@@ -42,8 +42,8 @@ def initialize_data(alpha_prot, maxval, alpha_lb, rand_seed=None):
         x1 = stats.truncnorm.rvs(-maxval, maxval, size=n)
         x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
     else:
-        x1 = stats.norm.rvs(-maxval, maxval, size=n)
-        x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
+        x1 = stats.norm.rvs(size=n)
+        x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(size=n))
     # the real skill is simply the mean of x1 and x2
     s_real, s_eff = compute_skill(x1, x2, x_prot, alpha_lb)
     df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real, 's_eff': s_eff})

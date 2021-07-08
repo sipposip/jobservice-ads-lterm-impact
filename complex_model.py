@@ -12,6 +12,8 @@ features of individuals:
 
 model parameters:
     delta_T_u: time an individual spends in the lowprospect waiting group
+    ...
+    ...
 
 performance topics:
     the model needs a data structure (the history) that grows with every timestep, but in an unpredictable way.
@@ -47,8 +49,8 @@ def draw_data_from_influx(n, alpha_prot, maxval):
         x1 = stats.truncnorm.rvs(-maxval, maxval, size=n)
         x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
     else:
-        x1 = stats.norm.rvs(-maxval, maxval, size=n)
-        x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
+        x1 = stats.norm.rvs(size=n)
+        x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(size=n))
     s_real = compute_skill(x1, x2)
     df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real})
     # set T_u to 0 for all individuals
