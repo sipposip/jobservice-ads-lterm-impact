@@ -67,14 +67,15 @@ def assign_jobs(df, loc, scale):
     """compute probability of finding a job for each individuals
     and then seperate the input individuals into those that get assigned a job
     and those that remain workless
-
+    in the influx population, skill is normally distributed (var=1)
+    we make the probability of finding a job a function of s_real
+    p = p('s_real'). Note that p('s_real') is NOT a probability density function of s_real, but it is a function
+    that returns the probability of the event "finds a job" given a certain value of s_real
+    we model it as a logistic function (which is automatically between [0,1])
+    loc: location of the logistic probability function
+    scale: scale of the logistic probability function
     return: df_found_job, df_remains_workless
     """
-    # in the influx population, skill is normally distributed (var=1)
-    # we make the probability of finding a job a function of s_real
-    # p = p('s_real'). Note that p('s_real') is NOT a probability density function of s_real, but it is a function
-    # that returns the probability of the event "finds a job" given a certain value of s_real
-    # we model it as a logistic function (which is automatically between [0,1])
     p = special.expit(df['s_real'] * scale - loc)
     # now select who finds a job. we can do this via drawing from a uniform distribution in [0,1]
     # and then select those where p is larger that that
@@ -94,7 +95,6 @@ def compute_class(df, class_boundary):
 def train_model(df, modeltype, class_boundary):
     """
         train a logistic regression model
-        for now, the classes are defined as below and above mean T_u in the training data
     """
     if modeltype == 'full':
         X = df[['x1', 'x_prot']]
@@ -106,8 +106,7 @@ def train_model(df, modeltype, class_boundary):
 
 def predict(df, model, modeltype):
     """
-        train a logistic regression model
-        for now, the classes are defined as below and above mean T_u in the training data
+        make predictions with trained model
     """
     if modeltype == 'full':
         X = df[['x1', 'x_prot']]
@@ -118,8 +117,10 @@ def predict(df, model, modeltype):
 
 def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     """
-        update features based on intervention models. works with scalars and vectors
+        update features based on intervention models. works with scalars and vectors.
+        The scenario is encoded in the 2x2 array k_matrix
     """
+    assert(k_matrix.shape == (2,2))
     # in order to have the values in the k_matrix in a nicer format/scale, we
     # multiply it by a constant factor.
     scale_factor = 1 / 50
@@ -181,7 +182,7 @@ n_waiting = len(df_waiting)
 model_evolution = []
 
 if n_retain_from_spinup > n_spinup:
-    raise ValueError('crop_history_spinup  must be larger than n_spinup!')
+    raise ValueError('n_retain_from_spinup  must be larger than n_spinup!')
 
 for step in trange(n_spinup + tsteps):
     # assign jobs
@@ -208,11 +209,13 @@ for step in trange(n_spinup + tsteps):
     df_remains_workless = df_remains_workless[~idx_remove]
     if step > n_spinup:
         # train model on all accumulated historical data
+        # for this we need to extract the part of df_hist that is already filled with data
         df_hist_nonan = df_hist.iloc[:np.argmax(df_hist.x1.isna())]
         model = train_model(df_hist_nonan, modeltype, class_boundary)
         # group the current jobless people into the two groups
         classes_pred = predict(df_remains_workless, model, modeltype)
         classes_true = compute_class(df_remains_workless, class_boundary)
+        # compute metrics on the predictions
         accur = metrics.accuracy_score(classes_true, classes_pred)
         recall = metrics.recall_score(classes_true, classes_pred)
         precision = metrics.precision_score(classes_true, classes_pred)
@@ -246,24 +249,29 @@ for step in trange(n_spinup + tsteps):
                     df_remains_workless = pd.concat([df_remains_workless, df_back])
                 df_waiting['T_w'] = df_waiting['T_w'] + 1
 
-            # add the new lowprps to the waiting group
+                assert(np.all(df_waiting['T_w']<=delta_T_u))
+            # add the new lowpros to the waiting group
             df_waiting = pd.concat([df_waiting, df_lowpros])
             n_waiting = len(df_waiting)
         else:
             # in case there is no waiting time for the lowpros, all go together in the
-            # gorup with workless
+            # group with workless
             df_remains_workless = pd.concat([df_highpros, df_lowpros])
     else:
+        # in the spinup phase we dont have predictions and therefore no prediction performance metrics
         # set values to be used in the record during the spinup pahse
         accur = np.nan
         precision = np.nan
         recall = np.nan
-    # draw new people from influx to replace the ones that found a job
+
+    # draw new people from influx to replace the ones that found a job and add them
+    # to the pool of active jobseekers
     df_new = draw_data_from_influx(n_found_job + n_removed, alpha_prot, maxval)
     df_active = pd.concat([df_remains_workless, df_new], axis=0)
     n_active = len(df_active)
     assert (n_active + n_waiting == n_population)
     df_active_and_waiting = pd.concat([df_active, df_waiting], axis=0)
+    # compute summary statistics
     model_evolution.append(pd.DataFrame({
         'n_active': n_active,
         'n_waiting': n_waiting,
@@ -280,9 +288,10 @@ model_evolution = pd.concat(model_evolution)
 # remove tha tail with NaNs
 df_hist = df_hist.dropna()
 
+# ---- plot the results ----
 
-plt.figure()
 # plot jobmarket probability function
+plt.figure()
 x = np.linspace(-3, 3, 100)
 plt.plot(x, special.expit(x * jobmarket_function_scale - jobmarket_function_loc))
 plt.xlabel('s_real')
@@ -296,17 +305,14 @@ sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
 # plot the relation ov x1 and T_u over the whole period
 sns.jointplot('x1', 'T_u', data=df_hist)
 
-
 sns.jointplot('x1', 'T_u', data=df_hist[df_hist['step']==df_hist['step'].max()])
-
-
 
 tmean_until_job = df_hist.groupby('step')['T_u'].mean()
 tmean_until_job_priv = df_hist[df_hist['x_prot'] == 1].groupby('step')['T_u'].mean()
 tmean_until_job_upriv = df_hist[df_hist['x_prot'] == 0].groupby('step')['T_u'].mean()
 tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
 
-
+# plot modeltime vs different metrics/measures
 plt.figure(figsize=(6.4,6.4))
 ax1 = plt.subplot(411)
 plt.plot(tmean_until_job, label='all')
