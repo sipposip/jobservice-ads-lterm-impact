@@ -35,6 +35,17 @@ import pandas as pd
 from scipy import stats, special
 from sklearn import linear_model, metrics
 
+sns.set_context('notebook', font_scale=1)
+sns.set_palette('colorblind')
+plotdir = './plots_complexmodel/'
+if not os.path.isdir(plotdir):
+    os.mkdir(plotdir)
+
+
+def savefig(fname):
+    plt.savefig(plotdir + fname + '.pdf')
+    plt.savefig(plotdir + fname + '.svg')
+
 
 def draw_data_from_influx(n, alpha_prot, maxval):
     """
@@ -120,7 +131,7 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
         update features based on intervention models. works with scalars and vectors.
         The scenario is encoded in the 2x2 array k_matrix
     """
-    assert(k_matrix.shape == (2,2))
+    assert (k_matrix.shape == (2, 2))
     # in order to have the values in the k_matrix in a nicer format/scale, we
     # multiply it by a constant factor.
     scale_factor = 1 / 50
@@ -215,10 +226,19 @@ for step in trange(n_spinup + tsteps):
         # group the current jobless people into the two groups
         classes_pred = predict(df_remains_workless, model, modeltype)
         classes_true = compute_class(df_remains_workless, class_boundary)
+        frac_pred_highpros = np.mean(classes_pred==1)
+        frac_pred_lowpros = np.mean(classes_pred==0)
+        frac_true_highpros = np.mean(classes_true==1)
+        frac_true_lowpros = np.mean(classes_true==0)
         # compute metrics on the predictions
-        accur = metrics.accuracy_score(classes_true, classes_pred)
-        recall = metrics.recall_score(classes_true, classes_pred)
-        precision = metrics.precision_score(classes_true, classes_pred)
+        # in general, there are more highprps than lowpros,
+        # therefore it makes sense to swap the labels (does not change accuracy, but
+        # recall and precitions). with swapped labels "true" is lowpros (= smaller class)
+        classes_pred_swapped = ~classes_pred.astype('bool')
+        classes_true_swapped = ~classes_true.astype('bool')
+        accur = metrics.accuracy_score(classes_true_swapped, classes_pred_swapped)
+        recall = metrics.recall_score(classes_true_swapped, classes_pred_swapped)
+        precision = metrics.precision_score(classes_true_swapped, classes_pred_swapped)
 
         df_upd = df_remains_workless
         df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
@@ -249,7 +269,7 @@ for step in trange(n_spinup + tsteps):
                     df_remains_workless = pd.concat([df_remains_workless, df_back])
                 df_waiting['T_w'] = df_waiting['T_w'] + 1
 
-                assert(np.all(df_waiting['T_w']<=delta_T_u))
+                assert (np.all(df_waiting['T_w'] <= delta_T_u))
             # add the new lowpros to the waiting group
             df_waiting = pd.concat([df_waiting, df_lowpros])
             n_waiting = len(df_waiting)
@@ -263,6 +283,10 @@ for step in trange(n_spinup + tsteps):
         accur = np.nan
         precision = np.nan
         recall = np.nan
+        frac_pred_highpros = np.nan
+        frac_pred_lowpros = np.nan
+        frac_true_highpros = np.nan
+        frac_true_lowpros = np.nan
 
     # draw new people from influx to replace the ones that found a job and add them
     # to the pool of active jobseekers
@@ -282,6 +306,10 @@ for step in trange(n_spinup + tsteps):
         's_all': np.mean(df_active_and_waiting['s_real']),
         's_priv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 1]),
         's_upriv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 0]),
+        'frac_pred_highpros': frac_pred_highpros,
+        'frac_pred_lowpros': frac_pred_lowpros,
+        'frac_true_highpros': frac_true_highpros,
+        'frac_true_lowpros': frac_true_lowpros,
     }, index=[step]))
 
 model_evolution = pd.concat(model_evolution)
@@ -292,10 +320,11 @@ df_hist = df_hist.dropna()
 
 # plot jobmarket probability function
 plt.figure()
-x = np.linspace(-3, 3, 100)
+x = np.linspace(-2, 2, 100)
 plt.plot(x, special.expit(x * jobmarket_function_scale - jobmarket_function_loc))
 plt.xlabel('s_real')
 plt.ylabel('P finding a job')
+sns.despine()
 
 # plot distribution of T_u at the end of the history (so the
 # distribution of T_u of the individuals who found a job a the last timestep)
@@ -305,7 +334,7 @@ sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
 # plot the relation ov x1 and T_u over the whole period
 sns.jointplot('x1', 'T_u', data=df_hist)
 
-sns.jointplot('x1', 'T_u', data=df_hist[df_hist['step']==df_hist['step'].max()])
+sns.jointplot('x1', 'T_u', data=df_hist[df_hist['step'] == df_hist['step'].max()])
 
 tmean_until_job = df_hist.groupby('step')['T_u'].mean()
 tmean_until_job_priv = df_hist[df_hist['x_prot'] == 1].groupby('step')['T_u'].mean()
@@ -313,29 +342,33 @@ tmean_until_job_upriv = df_hist[df_hist['x_prot'] == 0].groupby('step')['T_u'].m
 tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
 
 # plot modeltime vs different metrics/measures
-plt.figure(figsize=(6.4,6.4))
-ax1 = plt.subplot(411)
+n_plots = 5
+plt.figure(figsize=(6.4, 9))
+ax1 = plt.subplot(n_plots,1,1)
 plt.plot(tmean_until_job, label='all')
 plt.plot(tmean_until_job_priv, label='priv')
 plt.plot(tmean_until_job_upriv, label='upriv')
 plt.legend()
 plt.ylabel('T_u')
 sns.despine()
-ax = plt.subplot(412)
+ax = plt.subplot(n_plots,1,2)
 model_evolution[['accuracy', 'recall', 'precision']].plot(ax=ax)
 # since accuracy, recall and precision start with NANs, the plotting
-# function omits them and starts the xasis only at the first valid value
+# function omits them and starts the xaxis only at the first valid value
 # therfore we have to set the xlims
 plt.xlim(*ax1.get_xlim())
 sns.despine()
-ax = plt.subplot(413)
+ax = plt.subplot(n_plots,1,3)
 model_evolution[['s_all', 's_priv', 's_upriv']].plot(ax=ax)
 sns.despine()
 plt.ylabel('$s_{real}$')
 plt.xlabel('time')
-ax = plt.subplot(414)
+ax = plt.subplot(n_plots,1,4)
 plt.plot(tmean_until_job_cumulative)
 sns.despine()
 plt.ylabel('cumulative T_u')
+ax = plt.subplot(n_plots,1,5)
+model_evolution[['frac_true_highpros','frac_true_lowpros', 'frac_pred_highpros','frac_pred_lowpros']].plot(ax=ax)
+sns.despine()
+plt.ylabel('cumulative T_u')
 plt.xlabel('t')
-
