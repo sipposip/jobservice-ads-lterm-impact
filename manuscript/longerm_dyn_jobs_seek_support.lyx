@@ -161,7 +161,7 @@ using the protected attribute? Are there trade-offs between the - ethically
 
 \begin_layout Standard
 To address these questions, we use a combination of dynamical numerical
- modeling ans statistics/machine-learning.
+ modeling and statistics/machine-learning.
  We use synthetic data and an individual skill model that is as simple as
  possible while being just sophisticated enough to reflect inequalities
  and the possibility of having either full of only part knowledge of the
@@ -2279,7 +2279,296 @@ Complex Model
 \end_layout
 
 \begin_layout Standard
-not yet implemented, not yet decided whether we actually need it.
+Our second model is more complex and slightly more realistic than the simple
+ dynamical model.
+ While it was designed with the dynamics of the real-world AMS-system in
+ mind, it is still highly abstract and should not be confused with a complete
+ model of labour market dynamics.
+\end_layout
+
+\begin_layout Subsubsection
+Population model
+\end_layout
+
+\begin_layout Standard
+For the 
+\begin_inset Quotes eld
+\end_inset
+
+natural
+\begin_inset Quotes erd
+\end_inset
+
+ distribution of skill in the population we use the same model as for the
+ simple model.
+ The difference is that in the simple model, the population is fixed, with
+ an initial distribution of skill.
+ For the complex model, we assume that there is an (unlimited) 
+\emph on
+background-population 
+\emph default
+with the distribution of 
+\begin_inset Formula $x_{1},x_{2},x_{pr}$
+\end_inset
+
+ and 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ described by eqs (1-4).
+ This background population and the distribution of the features of the
+ individuals does not change throughout a model run, but acts as a pool
+ for refilling the pool of job-seekers.
+\end_layout
+
+\begin_layout Subsubsection
+Labor market model
+\end_layout
+
+\begin_layout Standard
+The labor market is modeled via a probabilistic function that for each individau
+l defines the probability of finding a job at this timestep, whereas this
+ probability depends on 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ of that individual.
+ We model the dependence on 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ as a logistic function:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+P\left(job|s_{real}\right)=\frac{1}{1+e^{-(\alpha_{l}s_{real}+\beta_{l})}}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Where 
+\begin_inset Formula $\alpha_{l}$
+\end_inset
+
+ and 
+\begin_inset Formula $\beta_{l}$
+\end_inset
+
+ are parameters that need to be set a priori.
+ At each timestep, 
+\begin_inset Formula $P\left(job|s_{real}\right)$
+\end_inset
+
+ is computed for each individual on the pool of job-seekers.
+ Each individual is removed from the pool of job seekers with probability
+ 
+\begin_inset Formula $P$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The choice for a logistic labor market function because it satisfies the
+ following intuition about the labor-market: If an individual has very low
+ skill, than the probability of finding a job is very low (close to zero),
+ and if the skill slightly increases, then the chances is still very low.
+ There is a soft threshold which one needs to reach in order to have a reasonabl
+e chance.
+ Above this soft threshold, increases in 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ have a strong impact, and the higher skilled one is, the higher the chances
+ of finding a job.
+ Eventually, however, this reaches a plateau, as the probability of finding
+ a job is already close to 1, and additional skill does basically not change
+ anything anymore.
+ The parameters 
+\begin_inset Formula $\alpha_{l}$
+\end_inset
+
+ and 
+\begin_inset Formula $\beta_{l}$
+\end_inset
+
+ define this 
+\begin_inset Quotes eld
+\end_inset
+
+middle
+\begin_inset Quotes erd
+\end_inset
+
+ region in which changes of 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ have a strong impact on the probability.
+ 
+\begin_inset Formula $\beta_{l}$
+\end_inset
+
+ defines the position of this middle region, and 
+\begin_inset Formula $\alpha_{l}$
+\end_inset
+
+ how broad/steep it is.
+\end_layout
+
+\begin_layout Standard
+Note that we made 
+\begin_inset Formula $P\left(job|s_{real}\right)$
+\end_inset
+
+ independent of the time an individual is already unemployed.
+ The intuition behind is that in our idealized setting, the skill of an
+ individual is solely defined by 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+, which the labor market knows.
+ Therefore, in this setting, the fact that someone has been unemployed for
+ a long time does not yield additional information about their skill.
+ In reality this is different, as long-term unemployment as additional informati
+on is known to be a reason for an employer to not hire someone.
+\end_layout
+
+\begin_layout Subsubsection
+Public Employment Service
+\end_layout
+
+\begin_layout Standard
+Similar to the simple model, the PES in the complex model uses a logistic
+ regression model that classifies individuals as either low or high prospect,
+ with 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and optionally 
+\begin_inset Formula $x_{pr}$
+\end_inset
+
+ as predictors.
+ The classes are, however, not defined by setting a threshold on 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+, but by setting a threshold on the time 
+\begin_inset Formula $T_{u}$
+\end_inset
+
+ that it took individuals in the historical record to find a job.
+ This history is continuously build up throughout a modelrun with each individua
+l that finds a job.
+\end_layout
+
+\begin_layout Paragraph
+Intervention Model
+\end_layout
+
+\begin_layout Standard
+The treatment of individuals differs between the high and the low prospect
+ group in two ways: in the amount of help (increase of 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+) they receive, and how long this help takes.
+ The highprospect group receives the help immediately, and is available
+ on the labor-market in the next timestep.
+ The low-prospect group, on the other hand, receives help that takes time
+ and removes them from the labor-market for a period of time 
+\begin_inset Formula $\Delta T_{u}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The change of 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+ under different scenarios is modeled in the same way as for the simple
+ model (see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Intervention-Model"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Each modelrun is started with a spinup phase.
+ TODO: expand description of spinup phase
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/complex_model_outline.pdf
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Outline of the complex model.
+ the labor market selects job-seekers from the pool of job seekers, with
+ a probability dependent on the skill of the individual.
+ Individual who find a job leave the system, individuals who have not found
+ a job are transferred to the PES.
+ The PES divides them into two groups, according to their predicted prospects
+ on the labor market.
+ The group with high prospects receives little help (increase in skill),
+ but it receives this immediately and goes back to the pool of job seekers
+ in the next timestep.
+ The group with low prospects, on the other hand, receives more help, but
+ in order to achieve this the individuals in the low prospect group are
+ withheld from the labor market for 
+\begin_inset Formula $T_{delay}$
+\end_inset
+
+ timesteps.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -2321,7 +2610,7 @@ BGSD_{eff}=\overline{S}_{eff,x_{pr}=0}-\overline{S}_{eff,x_{pr}=1}
 \end_layout
 
 \begin_layout Paragraph*
-Fraction of the underpriviliged group classified as high-prospect
+Fraction of the underprivileged group classified as high-prospect
 \end_layout
 
 \begin_layout Standard
@@ -2340,7 +2629,7 @@ computed for each timestep
 \end_layout
 
 \begin_layout Paragraph*
-Time after all underpriviliged are classified as high-prospect
+Time after all underprivileged are classified as high-prospect
 \end_layout
 
 \begin_layout Standard
@@ -2352,6 +2641,10 @@ Results
 \end_layout
 
 \begin_layout Subsection
+Simple model
+\end_layout
+
+\begin_layout Subsubsection
 Constant decision rule
 \end_layout
 
@@ -2466,7 +2759,7 @@ fair
 
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Adaptive decision rule
 \end_layout
 
@@ -2546,7 +2839,7 @@ fair
 \begin_inset Quotes erd
 \end_inset
 
- labor markted (
+ labor market (
 \begin_inset Formula $\alpha_{lb}=0$
 \end_inset
 
@@ -2573,6 +2866,10 @@ fair
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Complex model
 \end_layout
 
 \begin_layout Section
