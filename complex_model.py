@@ -15,6 +15,19 @@ model parameters:
     ...
     ...
 
+differences to simple model:
+in the simple model, prospect on the labour market is a direct (deterministic) function
+of s_real, therefore we know the real prospect, and can use it in the definitions
+of the scenarios.
+in the complex model, the real prospect is a probabilistic function of s_real, and emerges
+only throughout the simulation.
+Therefore, we actually cannot know how long an individual would need to find a job, even
+if we know s_real.
+For the scenario, we instead use an estimation of T_u based on a logisitc model using s_real as input,
+trained on the historical data.
+
+
+
 performance topics:
     the model needs a data structure (the history) that grows with every timestep, but in an unpredictable way.
     This is something that cannot be done efficiently with numpy arrays or pandas dataframes.
@@ -28,9 +41,6 @@ performance topics:
 
 
 
-TODO:
-the intervention model from the simple model does not make sense here, because we do not know
-the real class. Therefore, we have to adapt it!
 """
 
 import os
@@ -120,6 +130,8 @@ def train_model(df, modeltype, class_boundary):
         X = df[['x1', 'x_prot']]
     elif modeltype == 'base':
         X = df[['x1']]
+    elif modeltype == 'real':
+        X = df[['s_real']]
     classes = compute_class(df, class_boundary)
     return linear_model.LogisticRegression().fit(X, classes)
 
@@ -132,26 +144,36 @@ def predict(df, model, modeltype):
         X = df[['x1', 'x_prot']]
     elif modeltype == 'base':
         X = df[['x1']]
+    elif modeltype == 'real':
+        X = df[['s_real']]
     return model.predict(X)
 
 
-def intervention_model(x1, x2, pred_class, k_matrix):
+def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     """
         update features based on intervention models. works with scalars and vectors.
-        The scenario is encoded in the 2 entries of k_matrix
+        The scenario is encoded in the 2x2 array k_matrix
     """
-    assert (k_matrix.shape == (2,))
+    assert (k_matrix.shape == (2, 2))
     # in order to have the values in the k_matrix in a nicer format/scale, we
     # multiply it by a constant factor.
     scale_factor = 1 / 50
     k_matrix = k_matrix * scale_factor
+    # we have four parameters, for four cases (real class can be 1 or 2, and real class can be 1 or two)
+    k_rcl1_pcl1 = k_matrix[0, 0]
+    k_rcl1_pcl2 = k_matrix[0, 1]
+    k_rcl2_pcl1 = k_matrix[1, 0]
+    k_rcl2_pcl2 = k_matrix[1, 1]
     x1_max = 2
     x2_max = 2
-    # make an array with k values for the correct pred_class combination, then we can use
+    # make an array with k values for the correct real_class - pred_class combination, then we can use
     # vector operations and avoid a slow for loop
     kvec = np.zeros_like(x1)
-    kvec[pred_class == 0] = k_matrix[0]
-    kvec[pred_class == 1] = k_matrix[1]
+    kvec[(real_class == 0) & (pred_class == 0)] = k_rcl1_pcl1
+    kvec[(real_class == 0) & (pred_class == 1)] = k_rcl1_pcl2
+    kvec[(real_class == 1) & (pred_class == 0)] = k_rcl2_pcl1
+    kvec[(real_class == 1) & (pred_class == 1)] = k_rcl2_pcl2
+
     # if x1 or x2 are already above the maximum value that the intervention model can attain,
     # then we do not change them (otherwise they would be reduced when using the same formula)
     # in vector formulation we can achieve this with the np.maximum function (and not the np.max function)
@@ -161,7 +183,8 @@ def intervention_model(x1, x2, pred_class, k_matrix):
     return x1_new, x2_new
 
 
-k_matrix = np.array([0.1, 0.1])
+k_matrix = np.array([[0.1, 0.1],
+                     [0.1, 0.1]])
 
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
@@ -174,10 +197,10 @@ n_spinup = 400
 n_retain_from_spinup = 200
 delta_T_u = 5  # time lowpros are withdrawn from active group
 T_u_max = 100  # time after which workless individuals leave the system automatically
-modeltype = 'full'
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
+modeltype='full'
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
 # that something is a pool
@@ -218,30 +241,34 @@ for step in trange(n_spinup + tsteps):
     # remove individuals with T_u > T_u_max
     idx_remove = df_remains_workless['T_u'] > T_u_max
     n_removed = sum(idx_remove)  # idx_remove is a boolean index, so sum gives the number of Trues
+    n_removed = sum(idx_remove)  # idx_remove is a boolean index, so sum gives the number of Trues
     df_remains_workless = df_remains_workless[~idx_remove]
     if step > n_spinup:
         # train model on all accumulated historical data
         # for this we need to extract the part of df_hist that is already filled with data
         df_hist_nonan = df_hist.iloc[:np.argmax(df_hist.x1.isna())]
+        # our standard model is the
         model = train_model(df_hist_nonan, modeltype, class_boundary)
+        model_real = train_model(df_hist_nonan, 'real', class_boundary)
 
         # evaluate on historical training data
-        classes_true = compute_class(df_hist_nonan, class_boundary)
+        classes_true_hist = compute_class(df_hist_nonan, class_boundary)
         classes_pred_hist = predict(df_hist_nonan, model, modeltype)
         frac_pred_highpros_hist = np.mean(classes_pred_hist == 0)
         frac_pred_lowpros_hist = np.mean(classes_pred_hist == 1)
-        frac_true_highpros_hist = np.mean(classes_true == 0)
-        frac_true_lowpros_hist = np.mean(classes_true == 1)
+        frac_true_highpros_hist = np.mean(classes_true_hist == 0)
+        frac_true_lowpros_hist = np.mean(classes_true_hist == 1)
         # compute metrics on the predictions
-        accur = metrics.accuracy_score(classes_true, classes_pred_hist)
-        recall = metrics.recall_score(classes_true, classes_pred_hist)
-        precision = metrics.precision_score(classes_true, classes_pred_hist)
+        accur = metrics.accuracy_score(classes_true_hist, classes_pred_hist)
+        recall = metrics.recall_score(classes_true_hist, classes_pred_hist)
+        precision = metrics.precision_score(classes_true_hist, classes_pred_hist)
 
         # group the current jobless people into the two groups
         classes_pred = predict(df_remains_workless, model, modeltype)
+        classes_true = predict(df_remains_workless, model_real, 'real')
         frac_highpros = np.mean(classes_pred)
         df_upd = df_remains_workless
-        df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'],
+        df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
                                                         classes_pred, k_matrix)
 
         df_highpros = df_upd[classes_pred == 1].copy()
@@ -337,7 +364,7 @@ sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
 sns.jointplot('x1', 'T_u', data=df_hist)
 
 df_hist_last = df_hist[df_hist['step'] == df_hist['step'].max()]
-classes_true_hist_last = classes_true[df_hist['step'] == df_hist['step'].max()]
+classes_true_hist_last = classes_true_hist[df_hist['step'] == df_hist['step'].max()]
 classes_pred_hist_last = classes_pred_hist[df_hist['step'] == df_hist['step'].max()]
 sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_true_hist_last)
 sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_pred_hist_last)
