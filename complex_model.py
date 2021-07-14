@@ -51,6 +51,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats, special
 from sklearn import linear_model, metrics
+import matplotlib.backends.backend_pdf
 
 sns.set_context('notebook', font_scale=1)
 sns.set_palette('colorblind')
@@ -200,7 +201,11 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-modeltype='full'
+modeltype = 'full'
+
+paramstr = '_'.join([str(e) for e in (alpha_prot, tsteps,n_spinup,n_retain_from_spinup,delta_T_u,T_u_max,class_boundary,
+                     jobmarket_function_loc, jobmarket_function_scale)])
+
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
 # that something is a pool
@@ -345,10 +350,13 @@ model_evolution = pd.concat(model_evolution)
 # remove tha tail with NaNs
 df_hist = df_hist.dropna()
 
-# ---- plot the results ----
+# ---- plot the results ---
+# # we store the figures in a list so that we can save them to a single pdf at the end-
+figs = []
 
 # plot jobmarket probability function
-plt.figure()
+fig = plt.figure()
+figs.append(fig)
 x = np.linspace(-2, 2, 100)
 plt.plot(x, special.expit(x * jobmarket_function_scale - jobmarket_function_loc))
 plt.xlabel('s_real')
@@ -358,21 +366,33 @@ sns.despine()
 # plot distribution of T_u at the end of the history (so the
 # distribution of T_u of the individuals who found a job a the last timestep)
 df_hist_end_of_spinup = df_hist[df_hist['step'].between(n_spinup - 10, n_spinup)]
-sns.displot(df_hist_end_of_spinup['T_u'])
-sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
+# some seaborn plotting function create there own figure, which can be accessed
+# with the .fig attribute
+figgrid = sns.displot(df_hist_end_of_spinup['T_u'])
+figs.append(figgrid.fig)
+
+figgrid = sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
+figs.append(figgrid.fig)
+
 # plot the relation ov x1 and T_u over the whole period
-sns.jointplot('x1', 'T_u', data=df_hist)
+figgrid = sns.jointplot('x1', 'T_u', data=df_hist)
+figs.append(figgrid.fig)
+
 
 df_hist_last = df_hist[df_hist['step'] == df_hist['step'].max()]
 classes_true_hist_last = classes_true_hist[df_hist['step'] == df_hist['step'].max()]
 classes_pred_hist_last = classes_pred_hist[df_hist['step'] == df_hist['step'].max()]
-sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_true_hist_last)
-sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_pred_hist_last)
-sns.jointplot('x1', 'T_u', data=df_hist_last, hue='x_prot')
+figgrid = sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_true_hist_last)
+figs.append(figgrid.fig)
+figgrid = sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_pred_hist_last)
+figs.append(figgrid.fig)
+figgrid = sns.jointplot('x1', 'T_u', data=df_hist_last, hue='x_prot')
+figs.append(figgrid.fig)
 
 mean_Tu_priv = df_hist_last[df_hist_last['x_prot'] == 1]['T_u'].mean()
 mean_Tu_unpriv = df_hist_last[df_hist_last['x_prot'] == 0]['T_u'].mean()
-plt.figure()
+fig = plt.figure()
+figs.append(fig)
 sns.histplot(data=df_hist_last, x='T_u', hue='x_prot')
 plt.title(f'mean: unpriv (x_prot=0):{mean_Tu_unpriv:.2f}, priv (x_prot=0):{mean_Tu_priv:.2f}')
 
@@ -383,7 +403,8 @@ tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_un
 
 # plot modeltime vs different metrics/measures
 n_plots = 6
-plt.figure(figsize=(6.4, 11))
+fig  = plt.figure(figsize=(6.4, 11))
+figs.append(fig)
 ax1 = plt.subplot(n_plots, 1, 1)
 plt.plot(tmean_until_job, label='all')
 plt.plot(tmean_until_job_priv, label='priv')
@@ -411,10 +432,15 @@ ax = plt.subplot(n_plots, 1, 5)
 model_evolution[['frac_highpros', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
                  'frac_pred_highpros_hist', 'frac_pred_lowpros_hist']].plot(ax=ax)
 sns.despine()
-
 ax = plt.subplot(n_plots, 1, 6)
 model_evolution[['n_waiting', 'n_found_jobs']].plot(ax=ax)
 sns.despine()
 plt.xlabel('t')
-
 plt.tight_layout()
+
+
+# save all figures into a single pdf (one figure per page)
+pdf = matplotlib.backends.backend_pdf.PdfPages(f'{plotdir}/complex_model_allplots_{paramstr}.pdf')
+for fig in figs:
+    pdf.savefig(fig)
+pdf.close()
