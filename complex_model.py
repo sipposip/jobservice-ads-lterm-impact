@@ -94,9 +94,7 @@ def draw_data_from_influx(n, alpha_prot, maxval):
 
 
 def compute_skill(x1, x2):
-    # TODO HACK!!
     s_real = (x1 + x2) / 2
-    # s_real = (x1) / 2
     return s_real
 
 
@@ -224,7 +222,8 @@ n_hist_max = n_population * (tsteps + n_retain_from_spinup)
 # we fill it with nans, and then slowly fill it up with data
 df_hist = pd.DataFrame(np.nan, index=np.arange(n_hist_max), columns=['x1', 'x2', 'x_prot', 's_real', 'T_u', 'step'])
 
-df_waiting = pd.DataFrame()
+# initialize df_waiting with correct keys
+df_waiting = pd.DataFrame(columns=df_active.keys())
 n_waiting = len(df_waiting)
 model_evolution = []
 
@@ -319,7 +318,10 @@ for step in trange(n_spinup + tsteps):
 
                 assert (np.all(df_waiting['T_w'] <= delta_T_u))
             # add the new lowpros to the waiting group
-            df_waiting = pd.concat([df_waiting, df_lowpros])
+
+                df_waiting = pd.concat([df_waiting, df_lowpros])
+            else:
+                df_waiting = df_lowpros
             n_waiting = len(df_waiting)
         else:
             # in case there is no waiting time for the lowpros, all go together in the
@@ -354,8 +356,14 @@ for step in trange(n_spinup + tsteps):
     # compute summary statistics
     _df = pd.DataFrame({
         'n_active': n_active,
+        'n_active_priv': np.sum(df_active_and_waiting['x_prot']==1),
+        'n_active_upriv': np.sum(df_active_and_waiting['x_prot']==0),
         'n_waiting': n_waiting,
+        'n_waiting_priv': np.sum(df_waiting['x_prot']==1),
+        'n_waiting_upriv': np.sum(df_waiting['x_prot']==0),
         'n_found_jobs': n_found_job,
+        'n_found_jobs_priv': np.sum(df_found_job['x_prot']==1),
+        'n_found_jobs_upriv': np.sum(df_found_job['x_prot']==0),
         'accuracy': accur,
         'recall': recall,
         'precision': precision,
