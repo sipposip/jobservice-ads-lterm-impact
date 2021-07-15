@@ -39,7 +39,13 @@ performance topics:
     a dataframe filled with nans with the maximum possible size that can happen in the simulation
 
 
-
+TODO:
+    measures to implement:
+        * between group difference in T_u
+            - over complete history (T_u of individuals who found a job)
+            - over last timestep (T_u of individuals who found a job)
+            - in the current population (T_u of currently active)
+        * n_waiting and n_found_jobs split up by x_prot
 
 """
 
@@ -203,8 +209,9 @@ jobmarket_function_loc = 0
 jobmarket_function_scale = 6
 modeltype = 'full'
 
-paramstr = '_'.join([str(e) for e in (alpha_prot, tsteps,n_spinup,n_retain_from_spinup,delta_T_u,T_u_max,class_boundary,
-                     jobmarket_function_loc, jobmarket_function_scale)])
+paramstr = '_'.join(
+    [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
+                      jobmarket_function_loc, jobmarket_function_scale)])
 
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
@@ -267,6 +274,15 @@ for step in trange(n_spinup + tsteps):
         accur = metrics.accuracy_score(classes_true_hist, classes_pred_hist)
         recall = metrics.recall_score(classes_true_hist, classes_pred_hist)
         precision = metrics.precision_score(classes_true_hist, classes_pred_hist)
+        # same metrics, split up by protected group
+        idx_priv = df_hist_nonan['x_prot'] == 1
+        accur_priv = metrics.accuracy_score(classes_true_hist[idx_priv], classes_pred_hist[idx_priv])
+        recall_priv = metrics.recall_score(classes_true_hist[idx_priv], classes_pred_hist[idx_priv])
+        precision_priv = metrics.precision_score(classes_true_hist[idx_priv], classes_pred_hist[idx_priv])
+        idx_upriv = df_hist_nonan['x_prot'] == 0
+        accur_upriv = metrics.accuracy_score(classes_true_hist[idx_upriv], classes_pred_hist[idx_upriv])
+        recall_upriv = metrics.recall_score(classes_true_hist[idx_upriv], classes_pred_hist[idx_upriv])
+        precision_upriv = metrics.precision_score(classes_true_hist[idx_upriv], classes_pred_hist[idx_upriv])
 
         # group the current jobless people into the two groups
         classes_pred = predict(df_remains_workless, model, modeltype)
@@ -311,10 +327,16 @@ for step in trange(n_spinup + tsteps):
             df_remains_workless = pd.concat([df_highpros, df_lowpros])
     else:
         # in the spinup phase we dont have predictions and therefore no prediction performance metrics
-        # set values to be used in the record during the spinup pahse
+        # we set values to be used in the record during the spinup phase to nan
         accur = np.nan
         precision = np.nan
         recall = np.nan
+        accur_priv = np.nan
+        precision_priv = np.nan
+        recall_priv = np.nan
+        accur_upriv = np.nan
+        precision_upriv = np.nan
+        recall_upriv = np.nan
         frac_pred_highpros_hist = np.nan
         frac_pred_lowpros_hist = np.nan
         frac_true_highpros_hist = np.nan
@@ -328,23 +350,40 @@ for step in trange(n_spinup + tsteps):
     n_active = len(df_active)
     assert (n_active + n_waiting == n_population)
     df_active_and_waiting = pd.concat([df_active, df_waiting], axis=0)
+
     # compute summary statistics
-    model_evolution.append(pd.DataFrame({
+    _df = pd.DataFrame({
         'n_active': n_active,
         'n_waiting': n_waiting,
         'n_found_jobs': n_found_job,
         'accuracy': accur,
         'recall': recall,
         'precision': precision,
+        'accuracy_priv': accur_priv,
+        'recall_priv': recall_priv,
+        'precision_priv': precision_priv,
+        'accuracy_upriv': accur_upriv,
+        'recall_upriv': recall_upriv,
+        'precision_upriv': precision_upriv,
         's_all': np.mean(df_active_and_waiting['s_real']),
         's_priv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 1]),
         's_upriv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 0]),
+        'frac_unpriv': np.mean(df_active_and_waiting['x_prot'] == 0),
         'frac_pred_highpros_hist': frac_pred_highpros_hist,
         'frac_pred_lowpros_hist': frac_pred_lowpros_hist,
         'frac_true_highpros_hist': frac_true_highpros_hist,
         'frac_true_lowpros_hist': frac_true_lowpros_hist,
         'frac_highpros': frac_highpros,
-    }, index=[step]))
+        'mean_Tu_current': np.mean(df_active_and_waiting['T_u']),
+        'mean_Tu_priv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 1]),
+        'mean_Tu_upriv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 0]),
+    }, index=[step])
+    _df['BGSD'] = _df['s_priv'] - _df['s_upriv']
+    _df['BGTuD_current'] = _df['mean_Tu_priv_current'] - _df['mean_Tu_upriv_current']
+    _df['BGaccuracyD'] = _df['accuracy_priv'] - _df['accuracy_upriv']
+    _df['BGprecisionD'] = _df['precision_priv'] - _df['precision_upriv']
+    _df['BGrecallD'] = _df['recall_priv'] - _df['recall_upriv']
+    model_evolution.append(_df)
 
 model_evolution = pd.concat(model_evolution)
 # remove tha tail with NaNs
@@ -378,7 +417,6 @@ figs.append(figgrid.fig)
 figgrid = sns.jointplot('x1', 'T_u', data=df_hist)
 figs.append(figgrid.fig)
 
-
 df_hist_last = df_hist[df_hist['step'] == df_hist['step'].max()]
 classes_true_hist_last = classes_true_hist[df_hist['step'] == df_hist['step'].max()]
 classes_pred_hist_last = classes_pred_hist[df_hist['step'] == df_hist['step'].max()]
@@ -402,42 +440,62 @@ tmean_until_job_upriv = df_hist[df_hist['x_prot'] == 0].groupby('step')['T_u'].m
 tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
 
 # plot modeltime vs different metrics/measures
-n_plots = 6
-fig  = plt.figure(figsize=(6.4, 11))
+n_rows = 6
+n_cols = 2
+fig = plt.figure(figsize=(13, 11))
 figs.append(fig)
-ax1 = plt.subplot(n_plots, 1, 1)
+ax1 = plt.subplot(n_rows, n_cols, 1)
 plt.plot(tmean_until_job, label='all')
 plt.plot(tmean_until_job_priv, label='priv')
 plt.plot(tmean_until_job_upriv, label='upriv')
 plt.legend()
 plt.ylabel('T_u')
 sns.despine()
-ax = plt.subplot(n_plots, 1, 2)
+ax = plt.subplot(n_rows, n_cols, 2)
 model_evolution[['accuracy', 'recall', 'precision']].plot(ax=ax)
 # since accuracy, recall and precision start with NANs, the plotting
 # function omits them and starts the xaxis only at the first valid value
 # therfore we have to set the xlims
 plt.xlim(*ax1.get_xlim())
 sns.despine()
-ax = plt.subplot(n_plots, 1, 3)
+ax = plt.subplot(n_rows, n_cols, 3)
 model_evolution[['s_all', 's_priv', 's_upriv']].plot(ax=ax)
 sns.despine()
 plt.ylabel('$s_{real}$')
-ax = plt.subplot(n_plots, 1, 4)
+ax = plt.subplot(n_rows, n_cols, 4)
 plt.plot(tmean_until_job_cumulative)
 sns.despine()
 plt.ylabel('cumulative T_u')
 
-ax = plt.subplot(n_plots, 1, 5)
+ax = plt.subplot(n_rows, n_cols, 5)
 model_evolution[['frac_highpros', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
                  'frac_pred_highpros_hist', 'frac_pred_lowpros_hist']].plot(ax=ax)
 sns.despine()
-ax = plt.subplot(n_plots, 1, 6)
+ax = plt.subplot(n_rows, n_cols, 6)
 model_evolution[['n_waiting', 'n_found_jobs']].plot(ax=ax)
 sns.despine()
+
+ax = plt.subplot(n_rows, n_cols, 7)
+model_evolution[['mean_Tu_priv_current', 'mean_Tu_upriv_current']].plot(ax=ax)
+sns.despine()
+
+ax = plt.subplot(n_rows, n_cols, 8)
+model_evolution['BGSD'].plot(ax=ax)
+plt.ylabel('BGSD')
+sns.despine()
+
+ax = plt.subplot(n_rows, n_cols, 9)
+model_evolution['BGTuD_current'].plot(ax=ax)
+plt.ylabel('BGTuD_current')
+sns.despine()
+
+ax = plt.subplot(n_rows, n_cols, 10)
+model_evolution[['BGaccuracyD', 'BGprecisionD', 'BGrecallD']].plot(ax=ax)
+sns.despine()
+
 plt.xlabel('t')
 plt.tight_layout()
-
+savefig(f'complex_model_mainres_{paramstr}')
 
 # save all figures into a single pdf (one figure per page)
 pdf = matplotlib.backends.backend_pdf.PdfPages(f'{plotdir}/complex_model_allplots_{paramstr}.pdf')
