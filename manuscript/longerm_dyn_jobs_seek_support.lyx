@@ -1464,6 +1464,10 @@ targeting, but no class-dependent effect.
 targeting with class dependent effect.a)
 \end_layout
 
+\begin_layout Paragraph*
+Scenarios in detail
+\end_layout
+
 \begin_layout Standard
 The scenarios are summarized in table 
 \begin_inset CommandInset ref
@@ -1483,10 +1487,6 @@ noprefix "false"
 wide false
 sideways false
 status open
-
-\begin_layout Plain Layout
-
-\end_layout
 
 \begin_layout Plain Layout
 \begin_inset Caption Standard
@@ -2515,6 +2515,71 @@ noprefix "false"
 \end_inset
 
 ).
+\end_layout
+
+\begin_layout Standard
+An important difference, however, is that in the simple model, it is easy
+ to know the true prospect of an individual (as it is solely defined by
+ 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+).
+ In the complex model, this is less straightforward.
+ Here, the prospect is the 
+\emph on
+expected
+\emph default
+ time 
+\begin_inset Formula $T_{u}$
+\end_inset
+
+ that the individual will be unemployed.
+ The real time that this individual will need cannot be known, as it 1)
+ evolves from the model and 2) is linked to 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+, but only in a 
+\emph on
+probabilistic
+\emph default
+ way.
+\end_layout
+
+\begin_layout Standard
+For the complex model, we therefore defined the 
+\begin_inset Quotes eld
+\end_inset
+
+real prospect
+\begin_inset Quotes erd
+\end_inset
+
+ of an individual as 
+\begin_inset Formula $T_{u}$
+\end_inset
+
+ estimated from the historical data, using 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ as predictor (in contrast to the predicted prospect, which uses 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{prot}$
+\end_inset
+
+ as predictor).
+\end_layout
+
+\begin_layout Standard
+This real prospect (grouped into below or above the fixed threshold) is
+ then used in the scenarios.
+ (only in those scenarios it makes a difference if an individual is classified
+ incorrectly)
 \end_layout
 
 \begin_layout Standard

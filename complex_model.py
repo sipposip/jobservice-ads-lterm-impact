@@ -62,8 +62,10 @@ import matplotlib.backends.backend_pdf
 sns.set_context('notebook', font_scale=1)
 sns.set_palette('colorblind')
 plotdir = './plots_complexmodel/'
-if not os.path.isdir(plotdir):
-    os.mkdir(plotdir)
+datadir = './data_complexmodel/'
+for dir in (plotdir, datadir):
+    if not os.path.isdir(dir):
+        os.mkdir(dir)
 
 
 def savefig(fname):
@@ -197,7 +199,7 @@ np.random.seed(rand_seed)
 n_population = 10000
 alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
-tsteps = 400  # steps after spinup
+tsteps = 800  # steps after spinup
 n_spinup = 400
 n_retain_from_spinup = 200
 delta_T_u = 5  # time lowpros are withdrawn from active group
@@ -317,7 +319,7 @@ for step in trange(n_spinup + tsteps):
                 df_waiting['T_w'] = df_waiting['T_w'] + 1
 
                 assert (np.all(df_waiting['T_w'] <= delta_T_u))
-            # add the new lowpros to the waiting group
+                # add the new lowpros to the waiting group
 
                 df_waiting = pd.concat([df_waiting, df_lowpros])
             else:
@@ -356,14 +358,14 @@ for step in trange(n_spinup + tsteps):
     # compute summary statistics
     _df = pd.DataFrame({
         'n_active': n_active,
-        'n_active_priv': np.sum(df_active_and_waiting['x_prot']==1),
-        'n_active_upriv': np.sum(df_active_and_waiting['x_prot']==0),
+        'n_active_priv': np.sum(df_active_and_waiting['x_prot'] == 1),
+        'n_active_upriv': np.sum(df_active_and_waiting['x_prot'] == 0),
         'n_waiting': n_waiting,
-        'n_waiting_priv': np.sum(df_waiting['x_prot']==1),
-        'n_waiting_upriv': np.sum(df_waiting['x_prot']==0),
+        'n_waiting_priv': np.sum(df_waiting['x_prot'] == 1),
+        'n_waiting_upriv': np.sum(df_waiting['x_prot'] == 0),
         'n_found_jobs': n_found_job,
-        'n_found_jobs_priv': np.sum(df_found_job['x_prot']==1),
-        'n_found_jobs_upriv': np.sum(df_found_job['x_prot']==0),
+        'n_found_jobs_priv': np.sum(df_found_job['x_prot'] == 1),
+        'n_found_jobs_upriv': np.sum(df_found_job['x_prot'] == 0),
         'accuracy': accur,
         'recall': recall,
         'precision': precision,
@@ -391,6 +393,8 @@ for step in trange(n_spinup + tsteps):
     _df['BGaccuracyD'] = _df['accuracy_priv'] - _df['accuracy_upriv']
     _df['BGprecisionD'] = _df['precision_priv'] - _df['precision_upriv']
     _df['BGrecallD'] = _df['recall_priv'] - _df['recall_upriv']
+    _df['inbal_waiting'] = (
+                _df['n_waiting_upriv'] / _df['n_active_upriv'] - _df['n_waiting_priv'] / _df['n_active_priv'])
     model_evolution.append(_df)
 
 model_evolution = pd.concat(model_evolution)
@@ -501,6 +505,11 @@ ax = plt.subplot(n_rows, n_cols, 10)
 model_evolution[['BGaccuracyD', 'BGprecisionD', 'BGrecallD']].plot(ax=ax)
 sns.despine()
 
+ax = plt.subplot(n_rows, n_cols, 11)
+model_evolution['inbal_waiting'].plot(ax=ax)
+plt.ylabel('inbal_waiting')
+sns.despine()
+
 plt.xlabel('t')
 plt.tight_layout()
 savefig(f'complex_model_mainres_{paramstr}')
@@ -510,3 +519,7 @@ pdf = matplotlib.backends.backend_pdf.PdfPages(f'{plotdir}/complex_model_allplot
 for fig in figs:
     pdf.savefig(fig)
 pdf.close()
+
+# save model data
+model_evolution.to_csv(f'{datadir}/model_evolution_{paramstr}.csv')
+df_hist_last.to_csv(f'{datadir}/df_hist_last_{paramstr}.csv')
