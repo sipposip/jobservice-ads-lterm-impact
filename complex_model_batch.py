@@ -39,17 +39,10 @@ performance topics:
     a dataframe filled with nans with the maximum possible size that can happen in the simulation
 
 
-TODO:
-    measures to implement:
-        * between group difference in T_u
-            - over complete history (T_u of individuals who found a job)
-            - over last timestep (T_u of individuals who found a job)
-            - in the current population (T_u of currently active)
-        * n_waiting and n_found_jobs split up by x_prot
-
 """
 
 import os
+import argparse
 from tqdm import trange
 from pylab import plt
 import seaborn as sns
@@ -58,6 +51,21 @@ import pandas as pd
 from scipy import stats, special
 from sklearn import linear_model, metrics
 import matplotlib.backends.backend_pdf
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--n_population', default=10000, type=int)
+parser.add_argument('--alpha_prot', default=2, type=int)
+parser.add_argument('--tsteps', default=400, type=int)
+parser.add_argument('--maxval', default=2, type=int)
+parser.add_argument('--n_spinup', default=400, type=int)
+parser.add_argument('--n_retain_from_spinup', default=200, type=int)
+parser.add_argument('--delta_T_u', default=5, type=int)
+parser.add_argument('--T_u_max', default=100, type=int)
+parser.add_argument('--class_boundary', default=10, type=int)
+parser.add_argument('--jobmarket_function_loc', default=0, type=int)
+parser.add_argument('--jobmarket_function_scale', default=6, type=int)
+args = parser.parse_args()
+print(args)
 
 sns.set_context('notebook', font_scale=1)
 sns.set_palette('colorblind')
@@ -201,17 +209,17 @@ k_matrix = np.array([[1, 1],
 rand_seed = 998654  # fixed random seed for reproducibility
 scale_factor=1/200
 np.random.seed(rand_seed)
-n_population = 10000
-alpha_prot = 2  # influence of alpha_prot on x2
-maxval = 2
-tsteps = 400  # steps after spinup
-n_spinup = 400
-n_retain_from_spinup = 200
-delta_T_u = 5  # time lowpros are withdrawn from active group
-T_u_max = 100  # time after which workless individuals leave the system automatically
-class_boundary = 10  # in time-units
-jobmarket_function_loc = 0
-jobmarket_function_scale = 6
+n_population = args.n_population
+alpha_prot = args.alpha_prot  # influence of alpha_prot on x2
+maxval = args.maxval
+tsteps = args.tsteps  # steps after spinup
+n_spinup = args.n_spinup
+n_retain_from_spinup = args.n_retain_from_spinup
+delta_T_u = args.delta_T_u  # time lowpros are withdrawn from active group
+T_u_max = args.T_u_max  # time after which workless individuals leave the system automatically
+class_boundary = args.class_boundary  # in time-units
+jobmarket_function_loc = args.jobmarket_function_loc
+jobmarket_function_scale = args.jobmarket_function_scale
 modeltype = 'full'
 
 paramstr = '_'.join(
