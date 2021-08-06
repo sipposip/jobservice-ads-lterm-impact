@@ -199,7 +199,7 @@ k_matrix = np.array([[1, 1],
 
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
-scale_factor=1/200
+scale_factor=1/500
 np.random.seed(rand_seed)
 n_population = 10000
 alpha_prot = 2  # influence of alpha_prot on x2
@@ -216,7 +216,7 @@ modeltype = 'full'
 
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
-                      jobmarket_function_loc, jobmarket_function_scale, '.'.join(str(a) for a in k_matrix.flatten()))])
+                      jobmarket_function_loc, jobmarket_function_scale, scale_factor, '.'.join(str(a) for a in k_matrix.flatten()))])
 
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
