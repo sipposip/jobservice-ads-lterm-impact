@@ -47,6 +47,10 @@ TODO:
             - in the current population (T_u of currently active)
         * n_waiting and n_found_jobs split up by x_prot
 
+
+TODO: BUG: there must be an error in computing s_real. in df_hist_last,
+individuals with very high x1 and x2 still have pretty random s_real
+
 """
 
 import os
@@ -125,7 +129,7 @@ def assign_jobs(df, loc, scale):
 
 
 def compute_class(df, class_boundary):
-    """compute lowpros (1) and highpros (0) class"""
+    """compute lowpros (0) and highpros (1) class"""
     return (df['T_u'] < class_boundary).astype(int)
 
 
@@ -167,8 +171,8 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     k_matrix = k_matrix * scale_factor
 
     # adapt for waiting time
-    k_matrix[0,0]=k_matrix[0,0]*delta_T_u
-    k_matrix[0,1]=k_matrix[0,0]*delta_T_u
+    k_matrix[0, 0] = k_matrix[0, 0] * delta_T_u
+    k_matrix[0, 1] = k_matrix[0, 0] * delta_T_u
 
     # we have four parameters, for four cases (real class can be 1 or 2, and real class can be 1 or two)
     k_rcl1_pcl1 = k_matrix[0, 0]
@@ -199,7 +203,7 @@ k_matrix = np.array([[1, 1],
 
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
-scale_factor=1/500
+scale_factor = 1 / 500
 np.random.seed(rand_seed)
 n_population = 10000
 alpha_prot = 2  # influence of alpha_prot on x2
@@ -216,7 +220,8 @@ modeltype = 'full'
 
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
-                      jobmarket_function_loc, jobmarket_function_scale, scale_factor, '.'.join(str(a) for a in k_matrix.flatten()))])
+                      jobmarket_function_loc, jobmarket_function_scale, scale_factor,
+                      '.'.join(str(a) for a in k_matrix.flatten()))])
 
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
@@ -259,7 +264,6 @@ for step in trange(n_spinup + tsteps):
     # remove individuals with T_u > T_u_max
     idx_remove = df_remains_workless['T_u'] > T_u_max
     n_removed = sum(idx_remove)  # idx_remove is a boolean index, so sum gives the number of Trues
-    n_removed = sum(idx_remove)  # idx_remove is a boolean index, so sum gives the number of Trues
     df_remains_workless = df_remains_workless[~idx_remove]
     if step > n_spinup:
         # train model on all accumulated historical data
@@ -297,7 +301,8 @@ for step in trange(n_spinup + tsteps):
         df_upd = df_remains_workless
         df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
                                                         classes_pred, k_matrix)
-
+        # since we updated x1 and x2, we also need to update s_real
+        df_upd['s_real'] = compute_skill(df_upd['x1'], df_upd['x2'])
         df_highpros = df_upd[classes_pred == 1].copy()
         df_lowpros = df_upd[classes_pred == 0].copy()
         n_highpros, n_lowpros = len(df_highpros), len(df_lowpros)
@@ -399,7 +404,7 @@ for step in trange(n_spinup + tsteps):
     _df['BGprecisionD'] = _df['precision_priv'] - _df['precision_upriv']
     _df['BGrecallD'] = _df['recall_priv'] - _df['recall_upriv']
     _df['inbal_waiting'] = (
-                _df['n_waiting_upriv'] / _df['n_active_upriv'] - _df['n_waiting_priv'] / _df['n_active_priv'])
+            _df['n_waiting_upriv'] / _df['n_active_upriv'] - _df['n_waiting_priv'] / _df['n_active_priv'])
     model_evolution.append(_df)
 
 model_evolution = pd.concat(model_evolution)
@@ -425,23 +430,30 @@ df_hist_end_of_spinup = df_hist[df_hist['step'].between(n_spinup - 10, n_spinup)
 # some seaborn plotting function create there own figure, which can be accessed
 # with the .fig attribute
 figgrid = sns.displot(df_hist_end_of_spinup['T_u'])
+plt.title('T_u at end of spinup')
 figs.append(figgrid.fig)
 
 figgrid = sns.jointplot('x1', 'T_u', data=df_hist_end_of_spinup)
+plt.title('end of spinup')
 figs.append(figgrid.fig)
 
 # plot the relation ov x1 and T_u over the whole period
 figgrid = sns.jointplot('x1', 'T_u', data=df_hist)
+plt.title('whole history')
 figs.append(figgrid.fig)
 
 df_hist_last = df_hist[df_hist['step'] == df_hist['step'].max()]
 classes_true_hist_last = classes_true_hist[df_hist['step'] == df_hist['step'].max()]
 classes_pred_hist_last = classes_pred_hist[df_hist['step'] == df_hist['step'].max()]
+classes_true_hist_last.name = 'classes_true'
 figgrid = sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_true_hist_last)
+plt.suptitle('last timestep')
 figs.append(figgrid.fig)
 figgrid = sns.jointplot('x1', 'T_u', data=df_hist_last, hue=classes_pred_hist_last)
+plt.suptitle('last timestep, hue classes_pred')
 figs.append(figgrid.fig)
 figgrid = sns.jointplot('x1', 'T_u', data=df_hist_last, hue='x_prot')
+plt.suptitle('last timestep')
 figs.append(figgrid.fig)
 
 mean_Tu_priv = df_hist_last[df_hist_last['x_prot'] == 1]['T_u'].mean()
