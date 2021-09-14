@@ -48,9 +48,6 @@ TODO:
         * n_waiting and n_found_jobs split up by x_prot
 
 
-TODO: BUG: there must be an error in computing s_real. in df_hist_last,
-individuals with very high x1 and x2 still have pretty random s_real
-
 """
 
 import os
@@ -198,8 +195,46 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     return x1_new, x2_new
 
 
-k_matrix = np.array([[1, 1],
-                     [1, 1]])
+configs = [
+    {'scenario': "1",
+     'description': 'no targeting, no class-dependent effect',
+     'k_matrix': np.array([[1, 1],
+                           [1, 1]]),
+     },
+    {'scenario': "2a",
+     'description': 'no targeting, class-dependent effect (more on lowprospect group)',
+     'k_matrix': np.array([[2, 2],
+                           [1 / 2, 1 / 2]]),
+     },
+    {'scenario': "2b",
+     'description': 'no targeting, class-dependent effect (more on highprospect group)',
+     'k_matrix': np.array([[1 / 2, 1 / 2],
+                           [2, 2]]),
+     },
+    {'scenario': "3a",
+     'description': 'targeting (more on lowprospect group), no class-dependent effect',
+     'k_matrix': np.array([[2, 1 / 2],
+                           [2, 1 / 2]]),
+     },
+    {'scenario': "3b",
+     'description': 'targeting (more on highprospect group), no class-dependent effect',
+     'k_matrix': np.array([[1 / 2, 2],
+                           [1 / 2, 2]]),
+     },
+    {'scenario': "4a",
+     'description': 'targeting (more on lowprospect group), class-dependent effect',
+     'k_matrix': np.array([[4, 1],
+                           [1, 2]]) * 8 ** (-1 / 4),  # this factor is necessary to ensure that the gemoetric mean is 1
+     },
+    {'scenario': "4b",
+     'description': 'targeting (more on lowprospect group), class-dependent effect',
+     'k_matrix': np.array([[2, 1],
+                           [1, 4]]) * 8 ** (-1 / 4),  # this factor is necessary to ensure that the gemoetric mean is 1
+     },
+]
+
+
+
 
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
@@ -216,12 +251,17 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-modeltype = 'full'
+modeltype = 'full'  # full | base
+scenario='1'
+
+config = [e for e in configs if e['scenario']==scenario][0]
+
+k_matrix = config['k_matrix']
 
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
                       jobmarket_function_loc, jobmarket_function_scale, scale_factor,
-                      '.'.join(str(a) for a in k_matrix.flatten()))])
+                      '.'.join(str(a) for a in k_matrix.flatten()), modeltype, scenario)])
 
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
@@ -520,6 +560,7 @@ sns.despine()
 
 ax = plt.subplot(n_rows, n_cols, 10)
 model_evolution[['BGaccuracyD', 'BGprecisionD', 'BGrecallD']].plot(ax=ax)
+plt.xlim(*ax1.get_xlim())
 sns.despine()
 
 ax = plt.subplot(n_rows, n_cols, 11)
