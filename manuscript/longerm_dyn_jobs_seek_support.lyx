@@ -3783,8 +3783,16 @@ fair
 Complex model
 \end_layout
 
-\begin_layout Section
-Discussion and conclusion
+\begin_layout Standard
+TODO: df_hist_last x1 vs T_u scatterplots show that with high x1, T_u tends
+ to be higher.–> this is weird?????? It should be the other way round!!!
+ 
+\end_layout
+
+\begin_layout Standard
+in the spinup everything is alright, but once the modle kicks in, we get
+ this weird dependency.
+ its only those where the predicted true class is 0 (lowpro)
 \end_layout
 
 \begin_layout Standard
