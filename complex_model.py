@@ -48,6 +48,7 @@ TODO:
         * n_waiting and n_found_jobs split up by x_prot
 
 
+
 """
 
 import os
@@ -167,30 +168,39 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     # multiply it by a constant factor.
     k_matrix = k_matrix * scale_factor
 
-    # adapt for waiting time
-    k_matrix[0, 0] = k_matrix[0, 0] * delta_T_u
-    k_matrix[0, 1] = k_matrix[0, 0] * delta_T_u
-
-    # we have four parameters, for four cases (real class can be 1 or 2, and real class can be 1 or two)
-    k_rcl1_pcl1 = k_matrix[0, 0]
-    k_rcl1_pcl2 = k_matrix[0, 1]
-    k_rcl2_pcl1 = k_matrix[1, 0]
-    k_rcl2_pcl2 = k_matrix[1, 1]
     x1_max = 2
     x2_max = 2
+    # we have four parameters, for four cases (real class can be 1 or 2, and real class can be 1 or two)
     # make an array with k values for the correct real_class - pred_class combination, then we can use
     # vector operations and avoid a slow for loop
     kvec = np.zeros_like(x1)
-    kvec[(real_class == 0) & (pred_class == 0)] = k_rcl1_pcl1
-    kvec[(real_class == 0) & (pred_class == 1)] = k_rcl1_pcl2
-    kvec[(real_class == 1) & (pred_class == 0)] = k_rcl2_pcl1
-    kvec[(real_class == 1) & (pred_class == 1)] = k_rcl2_pcl2
+    kvec[(real_class == 0) & (pred_class == 0)] = k_matrix[0, 0]
+    kvec[(real_class == 0) & (pred_class == 1)] = k_matrix[0, 1]
+    kvec[(real_class == 1) & (pred_class == 0)] = k_matrix[1, 0]
+    kvec[(real_class == 1) & (pred_class == 1)] = k_matrix[1, 1]
 
-    # if x1 or x2 are already above the maximum value that the intervention model can attain,
-    # then we do not change them (otherwise they would be reduced when using the same formula)
-    # in vector formulation we can achieve this with the np.maximum function (and not the np.max function)
-    x1_new = np.maximum(x1 + (x1_max - x1) * kvec, x1)
-    x2_new = np.maximum(x2 + (x2_max - x2) * kvec, x2)
+    # we have to treat highpro and lowpro (predicted) seperately here in order to adapt
+    # for the fact that the ones in the waiting group are updated only once
+
+    x1_highpro = x1[pred_class == 1]
+    x2_highpro = x2[pred_class == 1]
+    x1_lowpro = x1[pred_class == 0]
+    x2_lowpro = x2[pred_class == 0]
+
+    x1_new = np.zeros_like(x1)
+    x2_new = np.zeros_like(x2)
+
+    x1_new[pred_class == 1] = np.maximum(x1_highpro + (x1_max - x1_highpro) * kvec[pred_class == 1], x1_highpro)
+    x2_new[pred_class == 1] = np.maximum(x2_highpro + (x2_max - x2_highpro) * kvec[pred_class == 1], x2_highpro)
+
+    for _ in range(delta_T_u + 1):
+        x1_lowpro = np.maximum(x1_lowpro + (x1_max - x1_lowpro) * kvec[pred_class == 0], x1_lowpro)
+        x2_lowpro = np.maximum(x2_lowpro + (x2_max - x2_lowpro) * kvec[pred_class == 0], x2_lowpro)
+
+    x1_new[pred_class == 0] = x1_lowpro
+    x2_new[pred_class == 0] = x2_lowpro
+    x1_new[pred_class == 1] = x1_highpro
+    x2_new[pred_class == 1] = x2_highpro
 
     return x1_new, x2_new
 
@@ -233,9 +243,6 @@ configs = [
      },
 ]
 
-
-
-
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
 scale_factor = 1 / 500
@@ -252,16 +259,15 @@ class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
 modeltype = 'full'  # full | base
-scenario='1'
+scenario = '3a'
 
-config = [e for e in configs if e['scenario']==scenario][0]
+config = [e for e in configs if e['scenario'] == scenario][0]
 
 k_matrix = config['k_matrix']
 
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
-                      jobmarket_function_loc, jobmarket_function_scale, scale_factor,
-                      '.'.join(str(a) for a in k_matrix.flatten()), modeltype, scenario)])
+                      jobmarket_function_loc, jobmarket_function_scale, scale_factor, modeltype, scenario)])
 
 # generate initial data
 # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
