@@ -38,17 +38,6 @@ performance topics:
     Therefore, I chose to use dataframes anyway, and partly circumvent the problems by creating
     a dataframe filled with nans with the maximum possible size that can happen in the simulation
 
-
-TODO:
-    measures to implement:
-        * between group difference in T_u
-            - over complete history (T_u of individuals who found a job)
-            - over last timestep (T_u of individuals who found a job)
-            - in the current population (T_u of currently active)
-        * n_waiting and n_found_jobs split up by x_prot
-
-
-
 """
 
 import os
@@ -206,6 +195,11 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
 
 
 configs = [
+    {'scenario': "0",
+     'description': 'only on lowprospect, no class-dependent effect',
+     'k_matrix': np.array([[1, 0],
+                           [1, 0]]),
+     },
     {'scenario': "1",
      'description': 'no targeting, no class-dependent effect',
      'k_matrix': np.array([[1, 1],
@@ -259,7 +253,7 @@ class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
 modeltype = 'full'  # full | base
-scenario = '3a'
+scenario = '0'
 
 config = [e for e in configs if e['scenario'] == scenario][0]
 
@@ -343,7 +337,8 @@ for step in trange(n_spinup + tsteps):
         # group the current jobless people into the two groups
         classes_pred = predict(df_remains_workless, model, modeltype)
         classes_true = predict(df_remains_workless, model_real, 'real')
-        frac_highpros = np.mean(classes_pred)
+        frac_highpros_pred = np.mean(classes_pred)
+        frac_highpros_true = np.mean(classes_true)
         df_upd = df_remains_workless
         df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
                                                         classes_pred, k_matrix)
@@ -401,7 +396,8 @@ for step in trange(n_spinup + tsteps):
         frac_pred_lowpros_hist = np.nan
         frac_true_highpros_hist = np.nan
         frac_true_lowpros_hist = np.nan
-        frac_highpros = np.nan
+        frac_highpros_pred = np.nan
+        frac_highpros_true = np.nan
 
     # draw new people from influx to replace the ones that found a job and add them
     # to the pool of active jobseekers
@@ -422,6 +418,9 @@ for step in trange(n_spinup + tsteps):
         'n_found_jobs': n_found_job,
         'n_found_jobs_priv': np.sum(df_found_job['x_prot'] == 1),
         'n_found_jobs_upriv': np.sum(df_found_job['x_prot'] == 0),
+        'Tu_found_jobs': np.mean(df_found_job['T_u']),
+        'Tu_found_jobs_upriv': np.mean(df_found_job[df_found_job['x_prot'] == 0]['T_u']),
+        'Tu_found_jobs_priv': np.mean(df_found_job[df_found_job['x_prot'] == 1]['T_u']),
         'accuracy': accur,
         'recall': recall,
         'precision': precision,
@@ -439,7 +438,8 @@ for step in trange(n_spinup + tsteps):
         'frac_pred_lowpros_hist': frac_pred_lowpros_hist,
         'frac_true_highpros_hist': frac_true_highpros_hist,
         'frac_true_lowpros_hist': frac_true_lowpros_hist,
-        'frac_highpros': frac_highpros,
+        'frac_highpros_pred': frac_highpros_pred,
+        'frac_highpros_true': frac_highpros_true,
         'mean_Tu_current': np.mean(df_active_and_waiting['T_u']),
         'mean_Tu_priv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 1]),
         'mean_Tu_upriv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 0]),
@@ -543,11 +543,12 @@ sns.despine()
 plt.ylabel('cumulative T_u')
 
 ax = plt.subplot(n_rows, n_cols, 5)
-model_evolution[['frac_highpros', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
+model_evolution[['frac_highpros_pred','frac_highpros_true', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
                  'frac_pred_highpros_hist', 'frac_pred_lowpros_hist']].plot(ax=ax)
 sns.despine()
 ax = plt.subplot(n_rows, n_cols, 6)
-model_evolution[['n_waiting', 'n_found_jobs']].plot(ax=ax)
+model_evolution[['n_waiting', 'n_found_jobs','n_waiting_upriv', 'n_found_jobs_upriv',
+                 'n_waiting_priv', 'n_found_jobs_priv']].plot(ax=ax)
 sns.despine()
 
 ax = plt.subplot(n_rows, n_cols, 7)
