@@ -78,7 +78,7 @@ def draw_data_from_influx(n, alpha_prot, maxval):
         x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(-maxval, maxval, size=n))
     else:
         x1 = stats.norm.rvs(size=n)
-        x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.truncnorm.rvs(size=n))
+        x2 = 1 / 2 * (alpha_prot * (x_prot - 0.5) + stats.norm.rvs(size=n))
     s_real = compute_skill(x1, x2)
     df = pd.DataFrame({'x1': x1, 'x2': x2, 'x_prot': x_prot, 's_real': s_real})
     # set T_u to 0 for all individuals
@@ -92,13 +92,13 @@ def compute_skill(x1, x2):
 
 
 def assign_jobs(df, loc, scale):
-    """compute probability of finding a job for each individuals
-    and then seperate the input individuals into those that get assigned a job
+    """compute probability of finding a job for each individual
+    and then separate the input individuals into those that get assigned a job
     and those that remain workless
     in the influx population, skill is normally distributed (var=1)
     we make the probability of finding a job a function of s_real
     p = p('s_real'). Note that p('s_real') is NOT a probability density function of s_real, but it is a function
-    that returns the probability of the event "finds a job" given a certain value of s_real
+    that returns the probability of the event "finds a job" given a certain value of s_real.
     we model it as a logistic function (which is automatically between [0,1])
     loc: location of the logistic probability function
     scale: scale of the logistic probability function
@@ -116,7 +116,7 @@ def assign_jobs(df, loc, scale):
 
 
 def compute_class(df, class_boundary):
-    """compute lowpros (0) and highpros (1) class"""
+    """compute lowpros (0) or highpros (1) class"""
     return (df['T_u'] < class_boundary).astype(int)
 
 
@@ -255,10 +255,11 @@ jobmarket_function_scale = 6
 modeltype = 'full'  # full | base
 scenario = '0'
 
+# get the right config for the chosen scenario
 config = [e for e in configs if e['scenario'] == scenario][0]
-
 k_matrix = config['k_matrix']
 
+# parameterstring string for filenames
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
                       jobmarket_function_loc, jobmarket_function_scale, scale_factor, modeltype, scenario)])
@@ -268,10 +269,10 @@ paramstr = '_'.join(
 # that something is a pool
 df_active = draw_data_from_influx(n_population, alpha_prot, maxval)
 # initialize empty data pools data
-n_hist_max = n_population * (tsteps + n_retain_from_spinup)
 # for the history, we make a dataframe of fixed (la
 # rge) datasize because extending dataframes is so slow in python
-# we fill it with nans, and then slowly fill it up with data
+# we fill it with nans, and then step for step fill it up with data
+n_hist_max = n_population * (tsteps + n_retain_from_spinup)
 df_hist = pd.DataFrame(np.nan, index=np.arange(n_hist_max), columns=['x1', 'x2', 'x_prot', 's_real', 'T_u', 'step'])
 
 # initialize df_waiting with correct keys
