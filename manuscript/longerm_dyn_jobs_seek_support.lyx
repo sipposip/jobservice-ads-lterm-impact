@@ -169,6 +169,16 @@ We further assume that there is a public authority that helps individuals
  skill, the likelihood that this individual has high skill is larger than
  if it would belong the the other group, even if everything else remains
  the same.
+ This has concept has already been brought up early in economical reasearch
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "arrowTheoryDiscrimination1971"
+literal "false"
+
+\end_inset
+
+.
  This additional information however has two potential problems: 1) it is
  only probabilistic and the resulting predictions are only accurate 
 \emph on
@@ -279,7 +289,7 @@ implicit assumption: in our model there is in principle no shortage of jobs.
 Literature overview
 \end_layout
 
-\begin_layout Standard
+\begin_layout Paragraph*
 literature on AMS algorithm
 \begin_inset Newline newline
 \end_inset
@@ -320,7 +330,7 @@ not fair
 \begin_inset Quotes erd
 \end_inset
 
- with repsect to a certain definition of fairness) can differ from a static
+ with respect to a certain definition of fairness) can differ from a static
  analysis.
  They analyzed simple settings of credit-scoring for loans, attention allocation
  for different sites, and college admissions.
@@ -335,9 +345,54 @@ labor-market-models
 \begin_inset Quotes erd
 \end_inset
 
- in a way that is very targeted towards our research question, and it should
- not be confused with labor market models from economics, which usually
- are used to study supply and demand of labor (
+ in a way that is very targeted towards our research question.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset citation
+LatexCommand cite
+key "huShorttermInterventionLongterm2018"
+literal "false"
+
+\end_inset
+
+ argue that individual fairness constraints are insufficient to remove racial
+ inequality from the US-labor-market, and they suggest a 
+\begin_inset Quotes eld
+\end_inset
+
+dual labor market
+\begin_inset Quotes erd
+\end_inset
+
+ that could solve this problem with a applying a dynamical approach.
+ The also argue that such further-reaching approaches will be more and more
+ important if employment processes are further automatized.
+ Similar to 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "damourFairnessNotStatic2020"
+literal "false"
+
+\end_inset
+
+, they abandon the concept of static fairness.
+\end_layout
+
+\begin_layout Standard
+fundamental rights: https://fra.europa.eu/sites/default/files/fra_uploads/fra-2020
+-artificial-intelligence_en.pdf
+\end_layout
+
+\begin_layout Paragraph*
+Economics
+\end_layout
+
+\begin_layout Standard
+In economics, there are also very different labor-market models that are
+ used to study supply and demand of labor (e.g.
+ 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "goetzLaborMarketTheory2014"
@@ -346,6 +401,41 @@ literal "false"
 \end_inset
 
 ).
+ Our modeling approach can better be classified as agent-based modeling,
+ which is also widely adopted in economic research (see 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "neugartAgentBasedModelsLabor2018"
+literal "false"
+
+\end_inset
+
+ for an historical overview of agent-based modeling of labor-markets).
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "chaturvediAgentbasedSimulationComputational2005"
+literal "false"
+
+\end_inset
+
+ Built an agent-based model of the labor-market for research purposes, in
+ which agents are individual persons.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset citation
+LatexCommand cite
+key "arrowTheoryDiscrimination1971"
+literal "false"
+
+\end_inset
+
+ studied discrimination in the labor market already in the 70s, one of their
+ explanation of discriminatory outcomes is that they can be caused by imperfect
+ information.
+ This is also the basis of our study.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1592,7 +1682,7 @@ name "tab:overview-of-scenarios"
 
 \end_inset
 
-overview of scenarios, defined by the 
+Overview of scenarios, defined by the 
 \begin_inset Formula $k$
 \end_inset
 
@@ -2752,8 +2842,9 @@ Note that we made
 , which the labor market knows.
  Therefore, in this setting, the fact that someone has been unemployed for
  a long time does not yield additional information about their skill.
- In reality this is different, as long-term unemployment as additional informati
-on could be a reason for an employer to not hire someone.
+ In reality this might not necessarily be the case, as long-term unemployment
+ as additional information could be a reason for an employer to not hire
+ someone.
 \end_layout
 
 \begin_layout Subsubsection
@@ -2831,6 +2922,16 @@ noprefix "false"
 \end_inset
 
 ).
+ Since individuals classified as low-prospect are removed from the active
+ group for 
+\begin_inset Formula $\Delta T_{u}$
+\end_inset
+
+ timesteps , there skill is updated 
+\begin_inset Formula $\Delta T_{u}+1$
+\end_inset
+
+ times (by applying eqs 9-10) to account for that.
 \end_layout
 
 \begin_layout Standard
@@ -2908,6 +3009,7 @@ Individuals that have been unemployed for too long (set by
 \end_inset
 
 ) leave the system automatically.
+ This corresponds to reality, where there is an upp
 \end_layout
 
 \begin_layout Standard
@@ -3001,10 +3103,10 @@ parameters of the complex model
 
 \begin_inset Tabular
 <lyxtabular version="3" rows="9" columns="3">
-<features tabularvalignment="middle">
+<features tabularvalignment="middle" tabularwidth="100text%">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
-<column alignment="center" valignment="top">
+<column alignment="left" valignment="top" width="40text%">
 <row>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
@@ -3024,7 +3126,7 @@ default value
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3056,7 +3158,7 @@ description
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell multirow="3" alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3088,7 +3190,7 @@ size of active population
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3128,7 +3230,7 @@ dependence of
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3160,7 +3262,7 @@ truncation value for data generation
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3192,7 +3294,7 @@ time that the lowprospect group is withdrawn from the active pool
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3224,7 +3326,7 @@ time after which job-seekers that did not find a job leave the system
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3256,7 +3358,7 @@ location of the logistic job-market function
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell multirow="3" alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3288,7 +3390,7 @@ steepness of the logistic job-market function
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -3377,7 +3479,8 @@ Time after all underprivileged are classified as high-prospect
 \end_layout
 
 \begin_layout Standard
-This metric only makes sense for the model with a constant decision function.
+This metric only makes sense for the simple model, and there only for the
+ configuration with a constant decision function.
 \end_layout
 
 \begin_layout Section
@@ -3784,15 +3887,18 @@ Complex model
 \end_layout
 
 \begin_layout Standard
-TODO: df_hist_last x1 vs T_u scatterplots show that with high x1, T_u tends
- to be higher.–> this is weird?????? It should be the other way round!!!
+An example run of the complex model is shown in fig.
  
-\end_layout
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:timeevol-complex-scen1"
+plural "false"
+caps "false"
+noprefix "false"
 
-\begin_layout Standard
-in the spinup everything is alright, but once the modle kicks in, we get
- this weird dependency.
- its only those where the predicted true class is 0 (lowpro)
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -3823,6 +3929,115 @@ literal "false"
 \end_inset
 
  and references therein).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/complex_model_mainres_2_400_400_200_5_100_10_0_6_0.002_full_0.pdf
+	width 100text%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:timeevol-complex-scen1"
+
+\end_inset
+
+Time evolution of complex model with base scenario (scenario 1)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/BGSD_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_base_complexmodel.svg
+	width 50text%
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename figures/BGSD_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_full_complexmodel.svg
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/barplot_BGSD_2_400_400_200_5_100_10_0_6_0.002_complexmodel.pdf
+	width 50text%
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename figures/barplot_diff_BGSD_2_400_400_200_5_100_10_0_6_0.002_complexmodel.pdf
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Results for complex model: BGSD
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection*
