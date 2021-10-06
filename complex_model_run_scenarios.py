@@ -26,7 +26,7 @@ if we know s_real.
 For the scenario, we instead use an estimation of T_u based on a logisitc model using s_real as input,
 trained on the historical data.
 
-
+for reproduction: this script needs to be run 2 times, one time with modeltype='full', one time with modeltype='base'
 
 performance topics:
     the model needs a data structure (the history) that grows with every timestep, but in an unpredictable way.
@@ -254,7 +254,7 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-modeltype = 'full'  # full | base
+modeltype = 'base'  # full | base
 scenario = sys.argv[1]
 
 for config in configs:
@@ -317,6 +317,15 @@ for config in configs:
             model = train_model(df_hist_nonan, modeltype, class_boundary)
             model_real = train_model(df_hist_nonan, 'real', class_boundary)
 
+            # store the model weight for the protected attribute. this is only available for the 'full' model,
+            # for the 'base' model we set it to zero
+            if modeltype == 'full':
+                coef = model._coef[1]
+            elif modeltype == 'base':
+                coef = 0
+            else:
+                raise Exception('should never get here')
+
             # evaluate on historical training data
             classes_true_hist = compute_class(df_hist_nonan, class_boundary)
             classes_pred_hist = predict(df_hist_nonan, model, modeltype)
@@ -343,6 +352,8 @@ for config in configs:
             classes_true = predict(df_remains_workless, model_real, 'real')
             frac_highpros_pred = np.mean(classes_pred)
             frac_highpros_true = np.mean(classes_true)
+            frac_upriv_in_highpros = len(df_remains_workless[classes_pred == 1].query('x_prot==0')) / len(
+                df_remains_workless.query('x_prot==0'))
             df_upd = df_remains_workless
             df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
                                                             classes_pred, k_matrix)
@@ -402,6 +413,8 @@ for config in configs:
             frac_true_lowpros_hist = np.nan
             frac_highpros_pred = np.nan
             frac_highpros_true = np.nan
+            frac_upriv_in_highpros = np.nan
+            coef = np.nan
 
         # draw new people from influx to replace the ones that found a job and add them
         # to the pool of active jobseekers
@@ -447,6 +460,7 @@ for config in configs:
             'mean_Tu_current': np.mean(df_active_and_waiting['T_u']),
             'mean_Tu_priv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 1]),
             'mean_Tu_upriv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 0]),
+            'frac_upriv_in_highpros': frac_upriv_in_highpros,
         }, index=[step])
         _df['BGSD'] = _df['s_priv'] - _df['s_upriv']
         _df['BGTuD_current'] = _df['mean_Tu_priv_current'] - _df['mean_Tu_upriv_current']
@@ -455,6 +469,8 @@ for config in configs:
         _df['BGrecallD'] = _df['recall_priv'] - _df['recall_upriv']
         _df['inbal_waiting'] = (
                 _df['n_waiting_upriv'] / _df['n_active_upriv'] - _df['n_waiting_priv'] / _df['n_active_priv'])
+
+        _df['coef'] = coef
         model_evolution.append(_df)
 
     model_evolution = pd.concat(model_evolution)
@@ -547,11 +563,11 @@ for config in configs:
     plt.ylabel('cumulative T_u')
 
     ax = plt.subplot(n_rows, n_cols, 5)
-    model_evolution[['frac_highpros_pred','frac_highpros_true', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
+    model_evolution[['frac_highpros_pred', 'frac_highpros_true', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
                      'frac_pred_highpros_hist', 'frac_pred_lowpros_hist']].plot(ax=ax)
     sns.despine()
     ax = plt.subplot(n_rows, n_cols, 6)
-    model_evolution[['n_waiting', 'n_found_jobs','n_waiting_upriv', 'n_found_jobs_upriv',
+    model_evolution[['n_waiting', 'n_found_jobs', 'n_waiting_upriv', 'n_found_jobs_upriv',
                      'n_waiting_priv', 'n_found_jobs_priv']].plot(ax=ax)
     sns.despine()
 
