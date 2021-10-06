@@ -320,7 +320,8 @@ for config in configs:
             # store the model weight for the protected attribute. this is only available for the 'full' model,
             # for the 'base' model we set it to zero
             if modeltype == 'full':
-                coef = model._coef[1]
+                # the coef_ array is 2d, 1st dimension is empty, x_prot is the 2nd element along the 2nd dimension
+                coef = model.coef_[0,1]
             elif modeltype == 'base':
                 coef = 0
             else:
