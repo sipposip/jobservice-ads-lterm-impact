@@ -385,6 +385,11 @@ fundamental rights: https://fra.europa.eu/sites/default/files/fra_uploads/fra-20
 -artificial-intelligence_en.pdf
 \end_layout
 
+\begin_layout Standard
+BigData: Discrimination in data-supported decision makinghttps://fra.europa.eu/sit
+es/default/files/fra_uploads/fra-2018-focus-big-data_en.pdf
+\end_layout
+
 \begin_layout Paragraph*
 Economics
 \end_layout
@@ -1688,6 +1693,112 @@ Overview of scenarios, defined by the
 
 -matrix of the intervention model
 \end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+0) targeting solely on low prospect group, no class dependent effect (only
+ for complex model)
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+predicted low
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real high
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+real low
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
 
 \end_inset
 
@@ -3887,7 +3998,10 @@ Complex model
 \end_layout
 
 \begin_layout Standard
-An example run of the complex model is shown in fig.
+In order to get a better feel and intuition for the model, we start by lookgin
+ at a single model run in detail.
+ A run of the complex model with full predictio model (including the protected
+ attribute) for scenario 1 is shown in fig.
  
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -3899,6 +4013,236 @@ noprefix "false"
 \end_inset
 
 .
+ The prediction-model performance metrics are only available from the time
+ on the prediction model is active.
+ Shown is part of the spinup phase (the first 200 timesteps were discarded),
+ and from timestep 400 the PES intervention model kicks in.
+ This is clearly seen in many of the shown measures.
+ The average time that the individuals who found a job at a certain timepoint
+ were already unemployed (
+\begin_inset Formula $T_{u}$
+\end_inset
+
+) starts to increase for the underpriviliged group (because m
+\end_layout
+
+\begin_layout Standard
+The skill 
+\begin_inset Formula $s_{real}$
+\end_inset
+
+ starts to increase for both groups, albeit with different magnitude - it
+ increases more for the underprivileged group, as can also be seen by the
+ evolution of the between-group skill difference 
+\begin_inset Formula $BGSD$
+\end_inset
+
+.
+ Eventually, most measures reach an equilibriaum again - for example, 
+\begin_inset Formula $BGSD$
+\end_inset
+
+ levels off at around 0.2.
+\end_layout
+
+\begin_layout Standard
+We now turn to comparing the different scenarios.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:res-complex-bgsd"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ shows the time-evolution of BGSD (a,b), the average over the last 200 timesteps
+ (c) and the difference between the average of the last and first 200 timesteps
+ (d).
+ The bars are split up by model type (full and base).
+\end_layout
+
+\begin_layout Standard
+The most striking result is that the base-model (using only 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+) has basically no effect on BGSD, independent of scenario.
+ Contrarily, the full model - which uses 
+\begin_inset Formula $x_{prot}$
+\end_inset
+
+ - clearly reduces BGSD with all scenarios, even with those that help the
+ highprospect group more.
+ In contrast to the simple model this not intuitively obvious.
+ While eq (9) and (10) put a maximum on the skill an individual can attain,
+ and thus the highprospect group cannot 
+\begin_inset Quotes eld
+\end_inset
+
+run away
+\begin_inset Quotes erd
+\end_inset
+
+ even if it receives more help than the lowprospect group, in the complex
+ dynamics in this setting it is not a-prioir clear whether scenarios 2b
+ and 4b could not increase BGSD anyway.
+\end_layout
+
+\begin_layout Standard
+Another interesting result is that none of the scenarios reaches a BGSD
+ of zero.
+\end_layout
+
+\begin_layout Standard
+Panel (e) shows the coefficient of the protected attribute in the regression
+ model (only for the full model), standardized by the sum of both regression
+ coefficients.
+ TODO: DOES AN INCREASE HERE REALLY MEAN THAT THE FEATURE IS GETTING MORE
+ IMPORTANT?
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/complex_model_mainres_2_400_400_200_5_100_10_0_6_0.002_full_1.pdf
+	width 100text%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:timeevol-complex-scen1"
+
+\end_inset
+
+Time evolution of complex model with base scenario (scenario 1), 
+\begin_inset Quotes eld
+\end_inset
+
+full
+\begin_inset Quotes erd
+\end_inset
+
+ model configuration
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+a)
+\begin_inset Graphics
+	filename figures/BGSD_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_base_complexmodel.svg
+	width 50text%
+
+\end_inset
+
+b)
+\begin_inset Graphics
+	filename figures/BGSD_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_full_complexmodel.svg
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+c)
+\begin_inset Graphics
+	filename figures/barplot_BGSD_2_400_400_200_5_100_10_0_6_0.002_complexmodel.png
+	lyxscale 20
+	width 50text%
+
+\end_inset
+
+d)
+\begin_inset Graphics
+	filename figures/barplot_diff_BGSD_2_400_400_200_5_100_10_0_6_0.002_complexmodel.png
+	lyxscale 20
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+e)
+\begin_inset Graphics
+	filename figures/coef2_standardized_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_full_complexmodel.svg
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:res-complex-bgsd"
+
+\end_inset
+
+Results for complex model
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Discussion
 \end_layout
 
 \begin_layout Standard
@@ -3931,113 +4275,8 @@ literal "false"
  and references therein).
 \end_layout
 
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename figures/complex_model_mainres_2_400_400_200_5_100_10_0_6_0.002_full_0.pdf
-	width 100text%
-
-\end_inset
-
-
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:timeevol-complex-scen1"
-
-\end_inset
-
-Time evolution of complex model with base scenario (scenario 1)
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename figures/BGSD_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_base_complexmodel.svg
-	width 50text%
-
-\end_inset
-
-
-\begin_inset Graphics
-	filename figures/BGSD_vs_time_allscens_2_400_400_200_5_100_10_0_6_0.002_full_complexmodel.svg
-	width 50text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename figures/barplot_BGSD_2_400_400_200_5_100_10_0_6_0.002_complexmodel.pdf
-	width 50text%
-
-\end_inset
-
-
-\begin_inset Graphics
-	filename figures/barplot_diff_BGSD_2_400_400_200_5_100_10_0_6_0.002_complexmodel.pdf
-	width 50text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-Results for complex model: BGSD
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
+\begin_layout Section
+Conclusion
 \end_layout
 
 \begin_layout Subsection*
@@ -4046,7 +4285,7 @@ Coda and Data Availability
 
 \begin_layout Standard
 The software for this study was written in Python and is published with
- this paper.
+ this paper as FOSS.
  It allows full reproduction of the results of this study as well as further
  experimentation with the model parameters.
 \end_layout
