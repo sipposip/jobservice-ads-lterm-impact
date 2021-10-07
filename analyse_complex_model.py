@@ -98,6 +98,9 @@ for config in configs:
 model_evolution_all = pd.concat(model_evolution_all)
 df_hist_last_all = pd.concat(df_hist_last_all)
 
+# compute compund metrics
+model_evolution_all['coef2_standardized'] = model_evolution_all.eval('coef2/(coef1+coef2)')
+
 # extract last timesteps for averaging.
 n_last = 200
 # we need to select all timesteps between the highest and highes-n_last timesteps
@@ -116,21 +119,26 @@ model_evolution_diff = model_evolution_end_agg - model_evolution_start_agg
 model_evolution_start_agg.reset_index(inplace=True)
 model_evolution_end_agg.reset_index(inplace=True)
 model_evolution_diff.reset_index(inplace=True)
-
 # paramstr without scenario and modeltype
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
                       jobmarket_function_loc, jobmarket_function_scale, scale_factor)])
 
+
+
+
+# lineplots, colored scenarios, one plot for each modeltype
 figsize = (7, 4)
 colors = sns.color_palette('colorblind', n_colors=7)
-for modeltype in modeltypes:
-    plt.figure(figsize=figsize)
-    sns.lineplot('time', 'BGSD', hue='scenario', data=model_evolution_all.query('modeltype==@modeltype'))
-    plt.title(f'modeltype={modeltype}')
-    sns.despine()
-    plt.ylim(0.1, 0.45)
-    plt.savefig(f'{plotdir}/BGSD_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.svg')
+for metric in ('BGSD', 'coef1','coef2','coef2_standardized'):
+    for modeltype in modeltypes:
+        plt.figure(figsize=figsize)
+        sns.lineplot('time', metric, hue='scenario', data=model_evolution_all.query('modeltype==@modeltype'))
+        plt.title(f'modeltype={modeltype}')
+        sns.despine()
+        if metric == 'BGSD':
+            plt.ylim(0.1, 0.45)
+        plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.svg')
 
 # barplots
 xvals = np.unique(model_evolution_end_agg['scenario'])
@@ -141,7 +149,7 @@ _x = np.arange(len(xvals))
 assert (np.array_equal(model_evolution_end_agg['scenario'][model_evolution_end_agg['modeltype'] == 'base'],
                        model_evolution_end_agg['scenario'][model_evolution_end_agg['modeltype'] == 'full']))
 width = 0.4
-for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD'):
+for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD','s_all', 'coef2_standardized'):
 
     # at end of simulation
     plt.figure(figsize=figsize)
@@ -158,8 +166,10 @@ for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD'):
     plt.title('end of simulation')
     plt.savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel.svg')
     plt.savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel.pdf')
+    # the hatch patterns often lead to problems with svg or pdf, therefore we also save png
+    plt.savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel.png', dpi=400)
 
-for metric in ('BGSD',):
+for metric in ('BGSD','s_all'):
     # difference between start and end
     plt.figure(figsize=figsize)
     plt.bar(_x - width / 2,
@@ -175,3 +185,4 @@ for metric in ('BGSD',):
     plt.title('difference end - start of simulation')
     plt.savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel.svg')
     plt.savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel.pdf')
+    plt.savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel.png', dpi=400)

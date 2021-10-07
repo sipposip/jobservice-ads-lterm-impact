@@ -254,7 +254,7 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-modeltype = 'base'  # full | base
+modeltype = 'full'  # full | base
 scenario = sys.argv[1]
 
 for config in configs:
@@ -321,11 +321,12 @@ for config in configs:
             # for the 'base' model we set it to zero
             if modeltype == 'full':
                 # the coef_ array is 2d, 1st dimension is empty, x_prot is the 2nd element along the 2nd dimension
-                coef = model.coef_[0,1]
+                coef2 = model.coef_[0,1]
             elif modeltype == 'base':
-                coef = 0
+                coef2 = 0
             else:
                 raise Exception('should never get here')
+            coef1 = model.coef_[0,0]
 
             # evaluate on historical training data
             classes_true_hist = compute_class(df_hist_nonan, class_boundary)
@@ -415,7 +416,8 @@ for config in configs:
             frac_highpros_pred = np.nan
             frac_highpros_true = np.nan
             frac_upriv_in_highpros = np.nan
-            coef = np.nan
+            coef1 = np.nan
+            coef2 = np.nan
 
         # draw new people from influx to replace the ones that found a job and add them
         # to the pool of active jobseekers
@@ -471,7 +473,9 @@ for config in configs:
         _df['inbal_waiting'] = (
                 _df['n_waiting_upriv'] / _df['n_active_upriv'] - _df['n_waiting_priv'] / _df['n_active_priv'])
 
-        _df['coef'] = coef
+        _df['coef1'] = coef1
+        _df['coef2'] = coef2
+
         model_evolution.append(_df)
 
     model_evolution = pd.concat(model_evolution)
@@ -595,10 +599,17 @@ for config in configs:
     model_evolution['inbal_waiting'].plot(ax=ax)
     plt.ylabel('inbal_waiting')
     sns.despine()
-
     plt.xlabel('t')
+
+    ax = plt.subplot(n_rows, n_cols, 12)
+    model_evolution[['coef1','coef2']].plot(ax=ax)
+    plt.ylabel('regression coefficients')
+    sns.despine()
+    plt.xlabel('t')
+
     plt.tight_layout()
     savefig(f'complex_model_mainres_{paramstr}')
+
 
     # save all figures into a single pdf (one figure per page)
     pdf = matplotlib.backends.backend_pdf.PdfPages(f'{plotdir}/complex_model_allplots_{paramstr}.pdf')
