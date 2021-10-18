@@ -82,7 +82,7 @@
 \begin_body
 
 \begin_layout Title
-Long-term dynamics of data-driven targeted support for job seekers
+Long-term dynamics of fairness of data-driven targeted support for job seekers
 \end_layout
 
 \begin_layout Author
@@ -128,14 +128,123 @@ Know-Center Graz,
 TU Graz
 \end_layout
 
+\begin_layout Abstract
+In this paper we take an approach that combines statistics/ml with dynamical
+ modeling in order to simulate a labor-market situation in which a public
+ employment authority (PES) provides targeted help to job-seekers, in a
+ population where the actual skill for the job-market is unevenly distributed
+ between two groups.
+ The targeting of the help is based on a data-driven intervention model
+ that estimates the chances of individuals for finding a job soon, based
+ on historical data from the model.
+ The intervention model has incomplete access to the actual skill of the
+ individuals, and complements this with the knowledge which group the individual
+s belongs to, thus using the - ethically problematic - group-membership
+ in order to increase its prediction accuracy.
+ We assess the dynamics - especially fairness related issues - of this intervent
+ion model over time and compare it to an intervention model that does not
+ use group-membership as predictor.
+ We find that the results can be counter-intuitive and conclude that for
+ assessing fairness effects of such a system in the real world careful modeling
+ of the surrounding labor-market is necessary.
+\end_layout
+
 \begin_layout Section
 Introduction
 \end_layout
 
 \begin_layout Standard
-Research question: Assume we have a population of individuals, where the
- prospect on the labor market of each individual is controlled by the personal
- skill of that individual, described by a set of independent skill features.
+The use of data-driven methods gets and more and more widespread, not only
+ in the private, but also in the public sector 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "/content/paper/726fd39d-en"
+literal "false"
+
+\end_inset
+
+.
+ One of those sectors are public emloyment services - services that help
+ people find a job.
+\end_layout
+
+\begin_layout Standard
+For example, recently the Austrian Public Employment Service (AMS) has started
+ to use a system that categorizes job-seekers into three groups with different
+ predicted probabilities of finding a job in the next couple of months 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "hollAMSArbeitsmarktChancenModell"
+literal "false"
+
+\end_inset
+
+.
+ The predictions are based on historical records, and the attributes of
+ an individual that influence the prediction include, among others, gender.
+ Especially the last aspect has lead to a widespread public discussion on
+ the ethical implications of this 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lopezReinforcingIntersectionalInequality2019,allhutterAlgorithmicProfilingJob2020,allhutterAMSALGORITHMUSSoziotechnischeAnalyse2020"
+literal "false"
+
+\end_inset
+
+.
+ Our paper is influenced by the ideas and problems behind the AMS system,
+ but it is not a study of this particular system, but of the principle approach
+ in general, and the potential long-term (e.g.
+ year-to-decade) effects.
+\end_layout
+
+\begin_layout Standard
+It has shown before that even if a system that seems fair in a static context
+ can produce unfair outcomes in the long term if it is part of a changing
+ system 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "damourFairnessNotStatic2020"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The goal of this study is to investigate the long-term effects on the population
+ if a public authority provides targeted help, based on data-driven methods
+ that include protected attributes (e.g.
+ gender.)
+\end_layout
+
+\begin_layout Standard
+Does such targeted help reduce or strengthen existing group-inequalities?
+ What is the long-term effect on general employment? What is the long-term
+ effect on employment in each group? How does this compare to a system that
+ is 
+\emph on
+not 
+\emph default
+using the protected attribute? Are there trade-offs between the - ethically
+ problematic - inclusion of protected attributes in the targeting versus
+ the global goal of high employment?
+\end_layout
+
+\begin_layout Standard
+To address these questions, we use a combination of dynamical numerical
+ modeling and statistics/machine-learning.
+ We use synthetic data and an individual skill model that is as simple as
+ possible while being just sophisticated enough to reflect inequalities
+ and the possibility of having either full of only part knowledge of the
+ skill of an individual.
+\end_layout
+
+\begin_layout Standard
+We assume we have a population of individuals, where the prospect on the
+ labor market of each individual is controlled by the personal skill of
+ that individual, described by a set of independent skill features.
  Additionally, each individual belongs to one of two groups, described by
  a protected attribute (e.g.
  gender).
@@ -190,43 +299,14 @@ on average
 \end_layout
 
 \begin_layout Standard
-The goal of this study is to investigate the long-term effects on the population
- if a public authority provides targeted help, based partly on protected
- attributes.
-\end_layout
-
-\begin_layout Standard
-Does such targeted help reduce or strengthen existing group-inequalities?
- What is the long-term effect on general employment? What is the long-term
- effect on employment in each group? How does this compare to a system that
- is 
-\emph on
-not 
-\emph default
-using the protected attribute? Are there trade-offs between the - ethically
- problematic - inclusion of protected attributes in the targeting versus
- the global goal of high employment?
-\end_layout
-
-\begin_layout Standard
-To address these questions, we use a combination of dynamical numerical
- modeling and statistics/machine-learning.
- We use synthetic data and an individual skill model that is as simple as
- possible while being just sophisticated enough to reflect inequalities
- and the possibility of having either full of only part knowledge of the
- skill of an individual.
-\end_layout
-
-\begin_layout Standard
 Additionally, we make - admittedly simplistic - assumptions on the labor
- market.
- 
+ market and encode these assumptions in simple dynamical models.
 \end_layout
 
 \begin_layout Standard
-We develop and use two different overall models: the first model is a simple
- model that has a fixed population, whose increase of skill over time is
- influenced by the PES.
+We develop and use two different labor-market models: the first model is
+ a simple model that has a fixed population, whose increase of skill over
+ time is influenced by the PES.
  The targeting of the PES is again influenced by the past mean skill of
  the two groups, and this past-skill is updated over time as the population
  changes.
@@ -238,51 +318,19 @@ We develop and use two different overall models: the first model is a simple
 \end_layout
 
 \begin_layout Standard
-The second model is more complex and considers a pool of job-seekers.
- This pool has an influx and an outflux, and considers not only the abstract
- skill of an individual, but additionally the time an individual needs to
- find a job.
- This is more related to actual job-markets.
-\end_layout
-
-\begin_layout Standard
-A central aspect of this study is that we consider different scenarios of
- the PES and how it distributes its resources across individuals with different
- skills.
-\end_layout
-
-\begin_layout Standard
-What this study is not: This study is not a real-world assessment of any
- real world public employment service or similar institutions.
-\end_layout
-
-\begin_layout Itemize
-Things to add:
-\end_layout
-
-\begin_layout Itemize
-efficiency argument, we assume there is only a certain amount of help or
- support available, and the PES wants to distribute in efficiently (whereas
+The second model is more complex, and more related to a real-world labor
+ market.
+ It considers a pool of job-seekers which has an influx and an outflux.
+ It considers not only the abstract skill of an individual, but additionally
+ the time that individuals need to find a job, just as a PES might do in
+ the real world.
  
-\begin_inset Quotes eld
-\end_inset
-
-efficient
-\begin_inset Quotes erd
-\end_inset
-
- needs to be defined), this is the goal of the EPS
 \end_layout
 
-\begin_layout Itemize
-combination of statistics/ML and system dynamics
-\end_layout
-
-\begin_layout Itemize
-implicit assumption: in our model there is in principle no shortage of jobs.
- If people have high enough skill, they will get a job.
- So one can say that there are enough jobs for the number of people, but
- not necessary for their skill-level
+\begin_layout Standard
+Within these models, we will consider different scenarios/approaches of
+ the PES on how it distributes its limited resources across individuals
+ with different skills, and what effects this causes in the long-term.
 \end_layout
 
 \begin_layout Subsection
@@ -290,19 +338,22 @@ Literature overview
 \end_layout
 
 \begin_layout Paragraph*
-literature on AMS algorithm
-\begin_inset Newline newline
+literature on fairness in data driven decision making
+\end_layout
+
+\begin_layout Standard
+The topic of fairness of data-driven methods from a fundamental rights perspecti
+ve is discussed in several reports by the European Union Agency for Fundamental
+ Rights (FRA) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "europeanunionagencyforfundamentalrightsBigDataDiscriminationDatasupported2018,europeanunionagencyforfundamentalrightsDataQualityArtificial2019,europeanunionagencyforfundamentalrightsGettingFutureRight2020"
+literal "false"
+
 \end_inset
 
-
-\begin_inset Newline newline
-\end_inset
-
-literature on fairness in general
-\begin_inset Newline newline
-\end_inset
-
-debiasing
+.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -336,6 +387,44 @@ not fair
  for different sites, and college admissions.
 \end_layout
 
+\begin_layout Paragraph*
+literature on AMS algorithm
+\end_layout
+
+\begin_layout Standard
+The system used by the Austrian PES (AMS) has been the subject of multiple
+ studies: 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lopezReinforcingIntersectionalInequality2019"
+literal "false"
+
+\end_inset
+
+ analyzed mainly from a mathematical approach, 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "allhutterAlgorithmicProfilingJob2020"
+literal "false"
+
+\end_inset
+
+ take an approach based on critical studies and fairness and discusses the
+ 
+\begin_inset Quotes eld
+\end_inset
+
+inherent politics of the AMS algorithm
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Paragraph*
+Economics
+\end_layout
+
 \begin_layout Standard
 We use the concept of 
 \begin_inset Quotes eld
@@ -346,56 +435,7 @@ labor-market-models
 \end_inset
 
  in a way that is very targeted towards our research question.
- 
-\end_layout
-
-\begin_layout Standard
-\begin_inset CommandInset citation
-LatexCommand cite
-key "huShorttermInterventionLongterm2018"
-literal "false"
-
-\end_inset
-
- argue that individual fairness constraints are insufficient to remove racial
- inequality from the US-labor-market, and they suggest a 
-\begin_inset Quotes eld
-\end_inset
-
-dual labor market
-\begin_inset Quotes erd
-\end_inset
-
- that could solve this problem with a applying a dynamical approach.
- The also argue that such further-reaching approaches will be more and more
- important if employment processes are further automatized.
- Similar to 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "damourFairnessNotStatic2020"
-literal "false"
-
-\end_inset
-
-, they abandon the concept of static fairness.
-\end_layout
-
-\begin_layout Standard
-fundamental rights: https://fra.europa.eu/sites/default/files/fra_uploads/fra-2020
--artificial-intelligence_en.pdf
-\end_layout
-
-\begin_layout Standard
-BigData: Discrimination in data-supported decision makinghttps://fra.europa.eu/sit
-es/default/files/fra_uploads/fra-2018-focus-big-data_en.pdf
-\end_layout
-
-\begin_layout Paragraph*
-Economics
-\end_layout
-
-\begin_layout Standard
-In economics, there are also very different labor-market models that are
+ In economics, there are also very different labor-market models that are
  used to study supply and demand of labor (e.g.
  
 \begin_inset CommandInset citation
@@ -444,15 +484,34 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-\begin_inset CommandInset bibtex
-LatexCommand bibtex
-btprint "btPrintCited"
-bibfiles "job_service_longterm_impact"
-options "plain"
+\begin_inset CommandInset citation
+LatexCommand cite
+key "huShorttermInterventionLongterm2018"
+literal "false"
 
 \end_inset
 
+ argue that individual fairness constraints are insufficient to remove racial
+ inequality from the US-labor-market, and they suggest a 
+\begin_inset Quotes eld
+\end_inset
 
+dual labor market
+\begin_inset Quotes erd
+\end_inset
+
+ that could solve this problem with a applying a dynamical approach.
+ The also argue that such further-reaching approaches will be more and more
+ important if employment processes are further automatized.
+ Similar to 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "damourFairnessNotStatic2020"
+literal "false"
+
+\end_inset
+
+, they abandon the concept of static fairness.
 \end_layout
 
 \begin_layout Section
@@ -547,7 +606,7 @@ We draw
 \end_inset
 
  from truncated normal distributions.
- Normal distributions because personal features such as 
+ We use normal distributions because personal features such as 
 \begin_inset Quotes eld
 \end_inset
 
@@ -565,7 +624,7 @@ literal "false"
 \end_inset
 
 ).
- A truncated normal distribution is used instead of an untrancated one to
+ A truncated normal distribution is used instead of an untruncated one to
  ensure that no one has 
 \begin_inset Formula $x_{1}$
 \end_inset
@@ -934,7 +993,7 @@ Initial population.
 \end_layout
 
 \begin_layout Subsection
-Simple dynamical model
+Simple model
 \end_layout
 
 \begin_layout Standard
@@ -993,7 +1052,7 @@ Sketch of the simple dynamical model
 \end_layout
 
 \begin_layout Subsubsection
-labor market model
+Labor market model
 \end_layout
 
 \begin_layout Standard
@@ -3111,7 +3170,10 @@ This real prospect (grouped into below or above the fixed threshold) is
 
 \begin_layout Standard
 Each modelrun is started with a spinup phase.
- TODO: expand description of spinup phase
+ The first 400 timesteps are run without intervention model in order to
+ allow the buildup of an initial historical dataset.
+ The first 200 timesteps are discarded, and the remaining 200 are used as
+ first historical dataset.
 \end_layout
 
 \begin_layout Standard
@@ -3120,7 +3182,6 @@ Individuals that have been unemployed for too long (set by
 \end_inset
 
 ) leave the system automatically.
- This corresponds to reality, where there is an upp
 \end_layout
 
 \begin_layout Standard
@@ -3758,15 +3819,12 @@ Clearly visible is also the impact of the PES using the full vs the base
  time for reaching equality.
  For 4b - which also targets more towards the highprospect group, but has
  a penalty for misclassification - it is reversed.
- (DOES THIS MAKE SENSE? fullmodel->less missclassifications-??)
-\end_layout
-
-\begin_layout Itemize
-cf 1 and 3a: with 3a equality reached faster, but only with the full model.
- With the base model, it takes longer to reach equality! More or less same
- for 4a! –> including the problematic predictors does have an advantage
- for the underprivileged group (at least on average), both in the unbiased
- and the biased labor market.
+ Comparing scenario 1 with 3a and 4b shows another interesting thing: compared
+ to 1, 3a and 4a reach equality faster, but only with the full model.
+ With the base model, it takes longer to reach equality.
+ This means that including the problematic predictors does in a certain
+ sense have an advantage for the underprivileged group in this setting (at
+ least on average), both in the unbiased and the biased labor market.
 \end_layout
 
 \begin_layout Standard
@@ -3998,9 +4056,9 @@ Complex model
 \end_layout
 
 \begin_layout Standard
-In order to get a better feel and intuition for the model, we start by lookgin
+In order to get a better feel and intuition for the model, we start by looking
  at a single model run in detail.
- A run of the complex model with full predictio model (including the protected
+ A run of the complex model with full prediction model (including the protected
  attribute) for scenario 1 is shown in fig.
  
 \begin_inset CommandInset ref
@@ -4038,7 +4096,7 @@ The skill
 \end_inset
 
 .
- Eventually, most measures reach an equilibriaum again - for example, 
+ Eventually, most measures reach an equilibrium again - for example, 
 \begin_inset Formula $BGSD$
 \end_inset
 
@@ -4075,9 +4133,11 @@ The most striking result is that the base-model (using only
 
  - clearly reduces BGSD with all scenarios, even with those that help the
  highprospect group more.
- In contrast to the simple model this not intuitively obvious.
- While eq (9) and (10) put a maximum on the skill an individual can attain,
- and thus the highprospect group cannot 
+ In contrast to the simple model, this was - at least to the authors - not
+ intuitively obvious.
+ While eq.
+ (9) and (10) put a maximum on the skill an individual can attain, and thus
+ the highprospect group cannot 
 \begin_inset Quotes eld
 \end_inset
 
@@ -4246,20 +4306,6 @@ Discussion
 \end_layout
 
 \begin_layout Standard
-What if only 
-\begin_inset Quotes eld
-\end_inset
-
-decision support
-\begin_inset Quotes erd
-\end_inset
-
-, and the decision by the model is only input to a human? It is known that
- humans tend to rely on such systems (https://journals.sagepub.com/doi/10.1518/0018
-72097778543886).
-\end_layout
-
-\begin_layout Standard
 We assume that success on the labor market is based solely on the individual
  skill, and that observations of the labor market (e.g.
  who finds a job) are thus a measure of skill.
@@ -4276,6 +4322,29 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
+Both our models made the implicit assumption that there is in principle
+ no shortage of jobs.
+ If people have high enough skill, they will get a job.
+ So one can say that in our setting there are enough jobs for the number
+ of people, but not necessary for their skill-level.
+ Real-world job-markets can, however, be limited on the demand side, which
+ obviously could change the dynamics and effect of the PES's intervention.
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+This study is not a real-world assessment of any real world public employment
+ service or similar institutions.
+ Instead, its aim was to show that in order to assess the ethical consequences
+ of data-driven targeted support for job-seekers one needs to take into
+ account long-term dynamics.
+ This can only be done by
+\end_layout
+
+\begin_layout Standard
 A view on the long-term dynamics can be used for a more informed decision
  on whether or not to use a targeted support system.
  It can, however, also provide the basis for corrective actions that counteract
@@ -4287,19 +4356,40 @@ A view on the long-term dynamics can be used for a more informed decision
  in the longterm.
 \end_layout
 
-\begin_layout Section
-Conclusion
-\end_layout
-
 \begin_layout Subsection*
 Coda and Data Availability
 \end_layout
 
 \begin_layout Standard
 The software for this study was written in Python and is published with
- this paper as FOSS.
+ this paper as FOSS at Zenodo (TODO) and the Authors personal GitHub repository
+ (TODO).
  It allows full reproduction of the results of this study as well as further
  experimentation with the model parameters.
+\end_layout
+
+\begin_layout Subsection*
+Disclaimer on graphics
+\end_layout
+
+\begin_layout Standard
+We have used a colorscale for our graphics that at the first glance might
+ seem sub-optimal, as the colors are seemingly not verz easy to distinguish.
+ We have on purpose opted for that colorscale, as it is to our knowledge
+ the best colorscale for that number of colors that still can also be interprete
+d by individuals with red-green color vision deficiency.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+btprint "btPrintCited"
+bibfiles "job_service_longterm_impact"
+options "plain"
+
+\end_inset
+
+
 \end_layout
 
 \end_body
