@@ -4275,6 +4275,18 @@ literal "false"
  and references therein).
 \end_layout
 
+\begin_layout Standard
+A view on the long-term dynamics can be used for a more informed decision
+ on whether or not to use a targeted support system.
+ It can, however, also provide the basis for corrective actions that counteract
+ unwanted long-term affects.
+ Ideally, one would already consider long-term dynamics in the design phase.
+ With clearly defined long-term goals and constraints and an accurate model
+ for the long-term dynamics, data-driven targeted support systems could
+ from the beginning on be designed in a way that prevents unfair outcomes
+ in the longterm.
+\end_layout
+
 \begin_layout Section
 Conclusion
 \end_layout
