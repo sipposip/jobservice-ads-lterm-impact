@@ -128,7 +128,7 @@ paramstr = '_'.join(
 
 
 # lineplots, colored scenarios, one plot for each modeltype
-figsize = (7, 4)
+figsize = (7, 3)
 colors = sns.color_palette('colorblind', n_colors=7)
 for metric in ('BGSD', 'coef1','coef2','coef2_standardized'):
     for modeltype in modeltypes:
@@ -139,6 +139,8 @@ for metric in ('BGSD', 'coef1','coef2','coef2_standardized'):
         if metric == 'BGSD':
             plt.ylim(0.1, 0.45)
         plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.svg')
+        plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.png')
+        plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.pdf')
 
 # barplots
 xvals = np.unique(model_evolution_end_agg['scenario'])

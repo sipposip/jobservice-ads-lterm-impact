@@ -20,6 +20,7 @@ plotdir = './plots/'
 if not os.path.isdir(plotdir):
     os.mkdir(plotdir)
 
+plt.ioff()
 
 def savefig(fname):
     plt.savefig(plotdir + fname + '.pdf')
@@ -213,7 +214,7 @@ alpha_prot = 2  # influence of alpha_prot on x2
 maxval = 2
 n_steps = 600  # 600 for adaptive decision function, 100 for constant
 alpha_lb = 0  # attention: if this is changed ,the data needs to be initialized again!
-decision_function = 'adaptive'  # 'const' | 'adaptive'
+decision_function = 'const'  # 'const' | 'adaptive'
 df_init = initialize_data(alpha_prot=alpha_prot, maxval=maxval, alpha_lb=alpha_lb, rand_seed=rand_seed)
 p = sns.jointplot(x='x1', y='x2', data=df_init, hue='x_prot')
 savefig(f'initial_data_alpha_prot{alpha_prot}_maxval{maxval}')
@@ -300,38 +301,42 @@ for config in configs:
 # as high-prospect. All experiments in one plot, with each pair of experiments (both modeltypes) a different color.
 # the experiments with the full models are plotted with continous, the experiments with the base model with dotted
 # lines
-plt.figure(figsize=(12, 8))
+figsize=(6,3)
+plt.figure(figsize=figsize)
 colors = sns.color_palette('colorblind', n_colors=7)
-plt.subplot(211)
 for i, scenario in enumerate(exp_results):
     data_base = exp_results[scenario]['base']['res_summary']
     data_full = exp_results[scenario]['full']['res_summary']
     plt.plot(data_full['BGSD_real'], label=scenario, linestyle='-', color=colors[i])
     plt.plot(data_base['BGSD_real'], linestyle='--', color=colors[i])
 plt.legend()
-plt.ylabel('between-group-skill-difference real$')
+plt.ylabel('$BGSD_{real}$')
 sns.despine()
-plt.subplot(212)
+plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) +
+             'decision_func=' + decision_function)
+savefig(f'BGSD_real_{decision_function}_alpha_lb{alpha_lb}')
+
+plt.figure(figsize=figsize)
 for i, scenario in enumerate(exp_results):
     data_base = exp_results[scenario]['base']['res_summary']
     data_full = exp_results[scenario]['full']['res_summary']
     plt.plot(data_full['class2_group1'], label=scenario, linestyle='-', color=colors[i])
     plt.plot(data_base['class2_group1'], linestyle='--', color=colors[i])
 plt.legend()
-plt.ylabel('fraction of unprivileged \n group classified in better class')
+plt.ylabel('$FUHP$')
 sns.despine()
 plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) +
              'decision_func=' + decision_function)
-savefig(f'main_results_simple_model_{decision_function}_alpha_lb{alpha_lb}')
+savefig(f'FUHP_{decision_function}_alpha_lb{alpha_lb}')
 
-plt.figure(figsize=(7, 4))
+plt.figure(figsize=figsize)
 for i, scenario in enumerate(exp_results):
     data_base = exp_results[scenario]['base']['res_summary']
     data_full = exp_results[scenario]['full']['res_summary']
     plt.plot(data_full['BGSD_eff'], label=scenario, linestyle='-', color=colors[i])
     plt.plot(data_base['BGSD_eff'], linestyle='--', color=colors[i])
 plt.legend()
-plt.ylabel('between-group-skill-difference eff$')
+plt.ylabel('$BGSD_{eff}$')
 sns.despine()
 plt.suptitle(r'$\alpha_{pr}=$' + str(alpha_prot) + r' $\alpha_{lb}=$' + str(alpha_lb) +
              'decision_func=' + decision_function)
@@ -344,7 +349,7 @@ savefig(f'BGSD_eff_{decision_function}_alpha_lb{alpha_lb}')
 # therefore, we first need to convert the x values to numeric, and then
 # label them again
 # https://stackoverflow.com/questions/48157735/plot-multiple-bars-for-categorical-data
-plt.figure(figsize=(7, 4))
+plt.figure(figsize=figsize)
 xvals = np.unique(df_agg['scenario'])
 _x = np.arange(len(xvals))
 # this approach is only valid if the order of the scenarios is the same for both model types (which
