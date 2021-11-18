@@ -197,46 +197,27 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
 
 
 configs = [
-    {'scenario': "0",
+    {'scenario': "onlylow",
      'description': 'only on lowprospect, no class-dependent effect',
      'k_matrix': np.array([[1, 0],
                            [1, 0]]),
      },
-    {'scenario': "1",
+    {'scenario': "onlyhigh",
+     'description': 'only on highprospect, no class-dependent effect',
+     'k_matrix': np.array([[0, 1],
+                           [0, 1]]),
+     },
+    {'scenario': "balanced",
      'description': 'no targeting, no class-dependent effect',
      'k_matrix': np.array([[1, 1],
                            [1, 1]]),
      },
-    {'scenario': "2a",
-     'description': 'no targeting, class-dependent effect (more on lowprospect group)',
-     'k_matrix': np.array([[2, 2],
-                           [1 / 2, 1 / 2]]),
+    {'scenario': "balanced_errors_penalized",
+     'description': 'no targeting, no class-dependent effect',
+     'k_matrix': np.array([[1, 1/2],
+                           [1/2, 1]]),
      },
-    {'scenario': "2b",
-     'description': 'no targeting, class-dependent effect (more on highprospect group)',
-     'k_matrix': np.array([[1 / 2, 1 / 2],
-                           [2, 2]]),
-     },
-    {'scenario': "3a",
-     'description': 'targeting (more on lowprospect group), no class-dependent effect',
-     'k_matrix': np.array([[2, 1 / 2],
-                           [2, 1 / 2]]),
-     },
-    {'scenario': "3b",
-     'description': 'targeting (more on highprospect group), no class-dependent effect',
-     'k_matrix': np.array([[1 / 2, 2],
-                           [1 / 2, 2]]),
-     },
-    {'scenario': "4a",
-     'description': 'targeting (more on lowprospect group), class-dependent effect',
-     'k_matrix': np.array([[4, 1],
-                           [1, 2]]) * 8 ** (-1 / 4),  # this factor is necessary to ensure that the gemoetric mean is 1
-     },
-    {'scenario': "4b",
-     'description': 'targeting (more on lowprospect group), class-dependent effect',
-     'k_matrix': np.array([[2, 1],
-                           [1, 4]]) * 8 ** (-1 / 4),  # this factor is necessary to ensure that the gemoetric mean is 1
-     },
+
 ]
 
 # parameters
@@ -254,7 +235,7 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-modeltype = 'full'  # full | base
+modeltype = 'base'  # full | base
 scenario = sys.argv[1]
 
 for config in configs:
