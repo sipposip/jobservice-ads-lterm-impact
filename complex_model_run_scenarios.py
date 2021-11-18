@@ -93,7 +93,7 @@ def compute_skill(x1, x2):
     return s_real
 
 
-def assign_jobs(df, loc, scale):
+def assign_jobs(df, loc, scale, bias):
     """compute probability of finding a job for each individual
     and then separate the input individuals into those that get assigned a job
     and those that remain workless
@@ -106,7 +106,11 @@ def assign_jobs(df, loc, scale):
     scale: scale of the logistic probability function
     return: df_found_job, df_remains_workless
     """
-    p = special.expit(df['s_real'] * scale - loc)
+    # for a biased labormarket, the location is dependent on the protected attribute
+    loc_vec = loc * np.ones(len(df))
+    loc_vec = loc_vec - bias * (df[
+                                    'x_prot'] - 0.5)  # we need to substract the bias to get  higher probabilities already for lower s_real
+    p = special.expit(df['s_real'] * scale - loc_vec)
     # now select who finds a job. we can do this via drawing from a uniform distribution in [0,1]
     # and then select those where p is larger that that
     idcs_found_job = p > stats.uniform.rvs(size=len(p))
@@ -170,9 +174,6 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     kvec[(real_class == 1) & (pred_class == 0)] = k_matrix[1, 0]
     kvec[(real_class == 1) & (pred_class == 1)] = k_matrix[1, 1]
 
-    # we have to treat highpro and lowpro (predicted) seperately here in order to adapt
-    # for the fact that the ones in the waiting group are updated only once
-
     x1_highpro = x1[pred_class == 1]
     x2_highpro = x2[pred_class == 1]
     x1_lowpro = x1[pred_class == 0]
@@ -184,6 +185,8 @@ def intervention_model(x1, x2, real_class, pred_class, k_matrix):
     x1_new[pred_class == 1] = np.maximum(x1_highpro + (x1_max - x1_highpro) * kvec[pred_class == 1], x1_highpro)
     x2_new[pred_class == 1] = np.maximum(x2_highpro + (x2_max - x2_highpro) * kvec[pred_class == 1], x2_highpro)
 
+    # we have to treat highpro and lowpro (predicted) seperately here in order to adapt
+    # for the fact that the ones in the waiting group are updated only once
     for _ in range(delta_T_u + 1):
         x1_lowpro = np.maximum(x1_lowpro + (x1_max - x1_lowpro) * kvec[pred_class == 0], x1_lowpro)
         x2_lowpro = np.maximum(x2_lowpro + (x2_max - x2_lowpro) * kvec[pred_class == 0], x2_lowpro)
@@ -214,8 +217,8 @@ configs = [
      },
     {'scenario': "balanced_errors_penalized",
      'description': 'no targeting, no class-dependent effect',
-     'k_matrix': np.array([[1, 1/2],
-                           [1/2, 1]]),
+     'k_matrix': np.array([[1, 1 / 2],
+                           [1 / 2, 1]]),
      },
 
 ]
@@ -235,8 +238,10 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-modeltype = 'base'  # full | base
+labormarket_bias = 2  # bias to jobmarket_scale. ran with 2, todo but this is much too high!!
+modeltype = 'full'  # full | base
 scenario = sys.argv[1]
+
 
 for config in configs:
     scenario = config['scenario']
@@ -246,7 +251,8 @@ for config in configs:
     # parameterstring string for filenames
     paramstr = '_'.join(
         [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
-                          jobmarket_function_loc, jobmarket_function_scale, scale_factor, modeltype, scenario)])
+                          jobmarket_function_loc, jobmarket_function_scale, scale_factor, modeltype,
+                          labormarket_bias, scenario)])
 
     # generate initial data
     # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
@@ -269,7 +275,8 @@ for config in configs:
 
     for step in trange(n_spinup + tsteps):
         # assign jobs
-        df_found_job, df_remains_workless = assign_jobs(df_active, jobmarket_function_loc, jobmarket_function_scale)
+        df_found_job, df_remains_workless = assign_jobs(df_active, jobmarket_function_loc, jobmarket_function_scale,
+                                                        labormarket_bias)
         n_found_job, n_remains_workless = len(df_found_job), len(df_remains_workless)
         df_found_job['step'] = step
         # update historical data
@@ -302,12 +309,12 @@ for config in configs:
             # for the 'base' model we set it to zero
             if modeltype == 'full':
                 # the coef_ array is 2d, 1st dimension is empty, x_prot is the 2nd element along the 2nd dimension
-                coef2 = model.coef_[0,1]
+                coef2 = model.coef_[0, 1]
             elif modeltype == 'base':
                 coef2 = 0
             else:
                 raise Exception('should never get here')
-            coef1 = model.coef_[0,0]
+            coef1 = model.coef_[0, 0]
 
             # evaluate on historical training data
             classes_true_hist = compute_class(df_hist_nonan, class_boundary)
@@ -583,14 +590,13 @@ for config in configs:
     plt.xlabel('t')
 
     ax = plt.subplot(n_rows, n_cols, 12)
-    model_evolution[['coef1','coef2']].plot(ax=ax)
+    model_evolution[['coef1', 'coef2']].plot(ax=ax)
     plt.ylabel('regression coefficients')
     sns.despine()
     plt.xlabel('t')
 
     plt.tight_layout()
     savefig(f'complex_model_mainres_{paramstr}')
-
 
     # save all figures into a single pdf (one figure per page)
     pdf = matplotlib.backends.backend_pdf.PdfPages(f'{plotdir}/complex_model_allplots_{paramstr}.pdf')
