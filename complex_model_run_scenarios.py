@@ -108,8 +108,8 @@ def assign_jobs(df, loc, scale, bias):
     """
     # for a biased labormarket, the location is dependent on the protected attribute
     loc_vec = loc * np.ones(len(df))
-    loc_vec = loc_vec - bias * (df[
-                                    'x_prot'] - 0.5)  # we need to substract the bias to get  higher probabilities already for lower s_real
+    # we need to substract the bias to get  higher probabilities already for lower s_real
+    loc_vec = loc_vec - bias * (df['x_prot'] - 0.5)
     p = special.expit(df['s_real'] * scale - loc_vec)
     # now select who finds a job. we can do this via drawing from a uniform distribution in [0,1]
     # and then select those where p is larger that that
@@ -238,10 +238,9 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-labormarket_bias = 2  # bias to jobmarket_scale. ran with 2, todo but this is much too high!!
+labormarket_bias = 0  # bias to jobmarket_scale. ran with 2,
 modeltype = 'full'  # full | base
 scenario = sys.argv[1]
-
 
 for config in configs:
     scenario = config['scenario']
@@ -258,14 +257,14 @@ for config in configs:
     # for person-pools we use dataframes, and we always use "df_" as prefix to make clear
     # that something is a pool
     df_active = draw_data_from_influx(n_population, alpha_prot, maxval)
-    # initialize empty data pools data
+
     # for the history, we make a dataframe of fixed (la
     # rge) datasize because extending dataframes is so slow in python
     # we fill it with nans, and then step for step fill it up with data
     n_hist_max = n_population * (tsteps + n_retain_from_spinup)
     df_hist = pd.DataFrame(np.nan, index=np.arange(n_hist_max), columns=['x1', 'x2', 'x_prot', 's_real', 'T_u', 'step'])
 
-    # initialize df_waiting with correct keys
+    # initialize empty df_waiting with correct keys
     df_waiting = pd.DataFrame(columns=df_active.keys())
     n_waiting = len(df_waiting)
     model_evolution = []
@@ -301,11 +300,13 @@ for config in configs:
             # train model on all accumulated historical data
             # for this we need to extract the part of df_hist that is already filled with data
             df_hist_nonan = df_hist.iloc[:np.argmax(df_hist.x1.isna())]
-            # our standard model is the
+            # train the main prediction model
             model = train_model(df_hist_nonan, modeltype, class_boundary)
+            # train a reference prediction model that approximates the "real" T_u
             model_real = train_model(df_hist_nonan, 'real', class_boundary)
 
-            # store the model weight for the protected attribute. this is only available for the 'full' model,
+            # store the model weights
+            # for the protected attribute. this is only available for the 'full' model,
             # for the 'base' model we set it to zero
             if modeltype == 'full':
                 # the coef_ array is 2d, 1st dimension is empty, x_prot is the 2nd element along the 2nd dimension
@@ -337,13 +338,30 @@ for config in configs:
             recall_upriv = metrics.recall_score(classes_true_hist[idx_upriv], classes_pred_hist[idx_upriv])
             precision_upriv = metrics.precision_score(classes_true_hist[idx_upriv], classes_pred_hist[idx_upriv])
 
-            # group the current jobless people into the two groups
+            # group the current jobless people into the two groups (lowprospect and highprospect)
             classes_pred = predict(df_remains_workless, model, modeltype)
             classes_true = predict(df_remains_workless, model_real, 'real')
+
             frac_highpros_pred = np.mean(classes_pred)
             frac_highpros_true = np.mean(classes_true)
             frac_upriv_in_highpros = len(df_remains_workless[classes_pred == 1].query('x_prot==0')) / len(
                 df_remains_workless.query('x_prot==0'))
+            # make counterfactual predictions (with flipped x_prot)
+            df_remains_workless_flipped = df_remains_workless.copy()
+            df_remains_workless_flipped['x_prot'] = df_remains_workless_flipped['x_prot'].replace({1: 0, 0: 1})
+            classes_flipped = predict(df_remains_workless_flipped, model, modeltype)
+            # compute fractions thaw would be differently classified if they had a different x_prot
+
+            flipped = (classes_flipped != classes_pred)
+            fraction_flipped = np.mean(flipped)
+            fraction_flipped_to_highpros = np.mean((flipped) & (classes_flipped == 1))
+            fraction_flipped_to_lowpros = np.mean((flipped) & (classes_flipped == 0))
+            fraction_real_highpros_flipped_to_lowpros = np.sum(
+                (flipped) & (classes_flipped == 0) & (classes_true == 1)) / np.sum(classes_true==1)
+            fraction_real_lowpros_flipped_to_highpros = np.sum(
+                (flipped) & (classes_flipped == 1) & (classes_true == 0)) / np.sum(classes_true==0)
+
+            # update the skill features with the intervention model
             df_upd = df_remains_workless
             df_upd['x1'], df_upd['x2'] = intervention_model(df_upd['x1'], df_upd['x2'], classes_true,
                                                             classes_pred, k_matrix)
@@ -406,6 +424,8 @@ for config in configs:
             frac_upriv_in_highpros = np.nan
             coef1 = np.nan
             coef2 = np.nan
+            fraction_real_highpros_flipped_to_lowpros = np.nan
+            fraction_real_lowpros_flipped_to_highpros = np.nan
 
         # draw new people from influx to replace the ones that found a job and add them
         # to the pool of active jobseekers
@@ -441,7 +461,7 @@ for config in configs:
             's_all': np.mean(df_active_and_waiting['s_real']),
             's_priv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 1]),
             's_upriv': np.mean(df_active_and_waiting['s_real'][df_active_and_waiting['x_prot'] == 0]),
-            'frac_unpriv': np.mean(df_active_and_waiting['x_prot'] == 0),
+            'frac_upriv': np.mean(df_active_and_waiting['x_prot'] == 0),
             'frac_pred_highpros_hist': frac_pred_highpros_hist,
             'frac_pred_lowpros_hist': frac_pred_lowpros_hist,
             'frac_true_highpros_hist': frac_true_highpros_hist,
@@ -452,6 +472,8 @@ for config in configs:
             'mean_Tu_priv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 1]),
             'mean_Tu_upriv_current': np.mean(df_active_and_waiting['T_u'][df_active_and_waiting['x_prot'] == 0]),
             'frac_upriv_in_highpros': frac_upriv_in_highpros,
+            'fraction_real_highpros_flipped_to_lowpros': fraction_real_highpros_flipped_to_lowpros,
+            'fraction_real_lowpros_flipped_to_highpros': fraction_real_lowpros_flipped_to_highpros,
         }, index=[step])
         _df['BGSD'] = _df['s_priv'] - _df['s_upriv']
         _df['BGTuD_current'] = _df['mean_Tu_priv_current'] - _df['mean_Tu_upriv_current']
@@ -528,7 +550,7 @@ for config in configs:
     tmean_until_job_cumulative = np.cumsum(tmean_until_job) / np.arange(len(tmean_until_job))
 
     # plot modeltime vs different metrics/measures
-    n_rows = 6
+    n_rows = 7
     n_cols = 2
     fig = plt.figure(figsize=(13, 11))
     figs.append(fig)
@@ -551,9 +573,9 @@ for config in configs:
     sns.despine()
     plt.ylabel('$s_{real}$')
     ax = plt.subplot(n_rows, n_cols, 4)
-    plt.plot(tmean_until_job_cumulative)
+    model_evolution['frac_upriv'].plot(ax=ax)
     sns.despine()
-    plt.ylabel('cumulative T_u')
+    plt.ylabel('frac_upriv')
 
     ax = plt.subplot(n_rows, n_cols, 5)
     model_evolution[['frac_highpros_pred', 'frac_highpros_true', 'frac_true_highpros_hist', 'frac_true_lowpros_hist',
@@ -595,7 +617,12 @@ for config in configs:
     sns.despine()
     plt.xlabel('t')
 
-    plt.tight_layout()
+    ax = plt.subplot(n_rows, n_cols, 13)
+    model_evolution[['fraction_real_highpros_flipped_to_lowpros']].plot(ax=ax)
+    sns.despine()
+    plt.xlabel('t')
+
+    plt.tight_layout(w_pad=0, h_pad=0)
     savefig(f'complex_model_mainres_{paramstr}')
 
     # save all figures into a single pdf (one figure per page)

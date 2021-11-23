@@ -1,14 +1,24 @@
 import os
-import sys
 from pylab import plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
 
+plt.ioff()
+
 plotdir = './plots_complexmodel/allscenarios/'
+plotdir2 = './plots_complexmodel/singlescenarios/'
 datadir = './data_complexmodel/'
-if not os.path.isdir(plotdir):
-    os.mkdir(plotdir)
+for d in (plotdir, plotdir2):
+    if not os.path.isdir(d):
+        os.mkdir(d)
+
+
+def savefig(figname):
+    plt.savefig(f'{figname}.svg')
+    plt.savefig(f'{figname}.pdf')
+    plt.savefig(f'{figname}.png', dpi=400)
+
 
 # parameters
 rand_seed = 998654  # fixed random seed for reproducibility
@@ -25,7 +35,7 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-labormarket_bias=2
+labormarket_bias = 0
 
 modeltypes = ('full', 'base')
 configs = [
@@ -103,25 +113,20 @@ model_evolution_diff.reset_index(inplace=True)
 # paramstr without scenario and modeltype
 paramstr = '_'.join(
     [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
-                      jobmarket_function_loc, jobmarket_function_scale, scale_factor,labormarket_bias)])
-
-
-
+                      jobmarket_function_loc, jobmarket_function_scale, scale_factor, labormarket_bias)])
 
 # lineplots, colored scenarios, one plot for each modeltype
 figsize = (7, 3)
 colors = sns.color_palette('colorblind', n_colors=7)
-for metric in ('BGSD', 'coef1','coef2','coef2_standardized'):
+for metric in ('BGSD', 'coef1', 'coef2', 'coef2_standardized'):
     for modeltype in modeltypes:
         plt.figure(figsize=figsize)
         sns.lineplot('time', metric, hue='scenario', data=model_evolution_all.query('modeltype==@modeltype'))
         plt.title(f'modeltype={modeltype}')
         sns.despine()
         if metric == 'BGSD':
-            plt.ylim(0.1, 0.45)
-        plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.svg')
-        plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.png')
-        plt.savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel.pdf')
+            plt.ylim(0, 0.45)
+        savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel')
 
 # barplots
 xvals = np.unique(model_evolution_end_agg['scenario'])
@@ -132,40 +137,131 @@ _x = np.arange(len(xvals))
 assert (np.array_equal(model_evolution_end_agg['scenario'][model_evolution_end_agg['modeltype'] == 'base'],
                        model_evolution_end_agg['scenario'][model_evolution_end_agg['modeltype'] == 'full']))
 width = 0.4
-for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD','s_all', 'coef2_standardized'):
-
+for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD', 's_all', 'coef2_standardized'):
     # at end of simulation
     plt.figure(figsize=figsize)
     plt.bar(_x - width / 2,
             model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'base'],
-            width=width, color=colors, hatch='//', label='base')
+            width=width, color=colors, hatch='//', label='base', edgecolor='grey',
+        linewidth=5)
     plt.bar(_x + width / 2,
             model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'full'],
-            width=width, color=colors, hatch='--', label='full')
+            width=width, color=colors, hatch='--', label='full', edgecolor='grey',
+        linewidth=5)
     plt.xticks(_x, xvals)
-    plt.legend()
+    leg = plt.legend()
+    for legobj in leg.legendHandles:
+        legobj.set_linewidth(0)
     plt.ylabel(metric)
     sns.despine()
     plt.title('end of simulation')
-    plt.savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel.svg')
-    plt.savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel.pdf')
-    # the hatch patterns often lead to problems with svg or pdf, therefore we also save png
-    plt.savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel.png', dpi=400)
+    savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel')
 
-for metric in ('BGSD','s_all'):
+
+metric = 'fraction_real_highpros_flipped_to_lowpros'
+plt.figure(figsize=figsize)
+plt.bar(_x - width / 2,
+        model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'base'],
+        width=width, color=colors, hatch='//', label='base', edgecolor='grey',
+        linewidth=5)
+plt.bar(_x + width / 2,
+        model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'full'],
+        width=width, color=colors, hatch='--', label='full', edgecolor='grey',
+        linewidth=5)
+plt.xticks(_x, xvals)
+plt.ylabel('fraction real highpros \n flipped to lowpros')
+sns.despine()
+leg = plt.legend()
+for legobj in leg.legendHandles:
+    legobj.set_linewidth(0)
+plt.ylim(0,0.3)
+plt.title('end of simulation')
+savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel')
+
+for metric in ('BGSD', 's_all'):
     # difference between start and end
     plt.figure(figsize=figsize)
     plt.bar(_x - width / 2,
             model_evolution_diff[metric][model_evolution_diff['modeltype'] == 'base'],
-            width=width, color=colors, hatch='//', label='base')
+            width=width, color=colors, hatch='//', label='base', edgecolor='grey',
+        linewidth=5)
     plt.bar(_x + width / 2,
             model_evolution_diff[metric][model_evolution_diff['modeltype'] == 'full'],
-            width=width, color=colors, hatch='--', label='full')
+            width=width, color=colors, hatch='--', label='full', edgecolor='grey',
+        linewidth=5)
     plt.xticks(_x, xvals)
-    plt.legend()
+    leg = plt.legend()
+    for legobj in leg.legendHandles:
+        legobj.set_linewidth(0)
     plt.ylabel(metric)
     sns.despine()
+    if metric == 'BGSD':
+        plt.ylim(-0.25,0)
     plt.title('difference end - start of simulation')
-    plt.savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel.svg')
-    plt.savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel.pdf')
-    plt.savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel.png', dpi=400)
+    savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel')
+
+## multipanel plots, single plot for each scenario modeltype configuration
+for scenario in np.unique(model_evolution_all['scenario']):
+    for modeltype in modeltypes:
+
+        model_evolution = model_evolution_all.query('(scenario==@scenario) & (modeltype==@modeltype)')
+        n_rows = 4
+        n_cols = 2
+        fig = plt.figure(figsize=(13, 7))
+
+        ax1 = plt.subplot(n_rows, n_cols, 1)
+        model_evolution[['s_priv', 's_upriv','s_all']].plot(ax=ax1)
+        sns.despine()
+        plt.ylabel('$s_{real}$')
+
+        ax = plt.subplot(n_rows, n_cols, 2)
+        model_evolution['BGSD'].plot(ax=ax)
+        plt.ylabel('BGSD')
+        sns.despine()
+
+        ax = plt.subplot(n_rows, n_cols, 3)
+        model_evolution['mean_Tu_priv_current'].plot(ax=ax, label='priv')
+        model_evolution['mean_Tu_upriv_current'].plot(ax=ax, label='upriv')
+        plt.legend()
+        plt.ylabel('T_u')
+        sns.despine()
+
+        ax = plt.subplot(n_rows, n_cols, 4)
+        model_evolution['BGTuD_current'].plot(ax=ax)
+        plt.ylabel('BGTuD_current')
+        sns.despine()
+
+        ax = plt.subplot(n_rows, n_cols, 5)
+        model_evolution[['accuracy', 'recall', 'precision']].plot(ax=ax)
+        # since accuracy, recall and precision start with NANs, the plotting
+        # function omits them and starts the xaxis only at the first valid value
+        # therfore we have to set the xlims
+        plt.xlim(*ax1.get_xlim())
+        sns.despine()
+
+
+        ax = plt.subplot(n_rows, n_cols, 6)
+        model_evolution['frac_upriv'].plot(ax=ax)
+        sns.despine()
+        plt.ylabel('frac_upriv')
+
+
+        ax = plt.subplot(n_rows, n_cols, 7)
+        # model_evolution['inbal_waiting'].plot(ax=ax)
+        # plt.ylabel('inbal_waiting')
+        plt.plot(model_evolution.eval('n_waiting_priv / n_active_priv'), label='priv')
+        plt.plot(model_evolution.eval('n_waiting_upriv / n_active_upriv'),label='upriv')
+        plt.legend()
+        plt.ylabel('fraction in waiting')
+        sns.despine()
+        plt.xlabel('t')
+
+        ax = plt.subplot(n_rows, n_cols, 8)
+        model_evolution['fraction_real_highpros_flipped_to_lowpros'].plot(ax=ax)
+        sns.despine()
+        plt.ylabel('fraction real highpros \n flipped to lowpros')
+        plt.xlim(*ax1.get_xlim())
+        plt.xlabel('t')
+        plt.suptitle(f'scenario {scenario} modeltype {modeltype}')
+        plt.tight_layout(w_pad=0, h_pad=0)
+        savefig(f'{plotdir2}/onescenario_multipanel{paramstr}_{scenario}_{modeltype}')
