@@ -238,8 +238,8 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-labormarket_bias = 0  # bias to jobmarket_scale. ran with 2,
-modeltype = 'full'  # full | base
+labormarket_bias = 2  # bias to jobmarket_scale. ran with 2,
+modeltype = 'base'  # full | base
 scenario = sys.argv[1]
 
 for config in configs:
@@ -360,6 +360,8 @@ for config in configs:
                 (flipped) & (classes_flipped == 0) & (classes_true == 1)) / np.sum(classes_true==1)
             fraction_real_lowpros_flipped_to_highpros = np.sum(
                 (flipped) & (classes_flipped == 1) & (classes_true == 0)) / np.sum(classes_true==0)
+            fraction_of_lowpros_correctly_highpros_after_flipping= np.sum(
+                (flipped) & (classes_flipped == 1) & (classes_true == 1)) / np.sum(classes_pred == 0)
 
             # update the skill features with the intervention model
             df_upd = df_remains_workless
@@ -426,6 +428,7 @@ for config in configs:
             coef2 = np.nan
             fraction_real_highpros_flipped_to_lowpros = np.nan
             fraction_real_lowpros_flipped_to_highpros = np.nan
+            fraction_of_lowpros_correctly_highpros_after_flipping = np.nan
 
         # draw new people from influx to replace the ones that found a job and add them
         # to the pool of active jobseekers
@@ -474,6 +477,7 @@ for config in configs:
             'frac_upriv_in_highpros': frac_upriv_in_highpros,
             'fraction_real_highpros_flipped_to_lowpros': fraction_real_highpros_flipped_to_lowpros,
             'fraction_real_lowpros_flipped_to_highpros': fraction_real_lowpros_flipped_to_highpros,
+            'fraction_of_lowpros_correctly_highpros_after_flipping': fraction_of_lowpros_correctly_highpros_after_flipping,
         }, index=[step])
         _df['BGSD'] = _df['s_priv'] - _df['s_upriv']
         _df['BGTuD_current'] = _df['mean_Tu_priv_current'] - _df['mean_Tu_upriv_current']

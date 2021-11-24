@@ -143,11 +143,11 @@ for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD', 's_all', 'coe
     plt.bar(_x - width / 2,
             model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'base'],
             width=width, color=colors, hatch='//', label='base', edgecolor='grey',
-        linewidth=5)
+            linewidth=5)
     plt.bar(_x + width / 2,
             model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'full'],
             width=width, color=colors, hatch='--', label='full', edgecolor='grey',
-        linewidth=5)
+            linewidth=5)
     plt.xticks(_x, xvals)
     leg = plt.legend()
     for legobj in leg.legendHandles:
@@ -157,8 +157,7 @@ for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD', 's_all', 'coe
     plt.title('end of simulation')
     savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel')
 
-
-metric = 'fraction_real_highpros_flipped_to_lowpros'
+metric = 'fraction_of_lowpros_correctly_highpros_after_flipping'
 plt.figure(figsize=figsize)
 plt.bar(_x - width / 2,
         model_evolution_end_agg[metric][model_evolution_end_agg['modeltype'] == 'base'],
@@ -169,12 +168,12 @@ plt.bar(_x + width / 2,
         width=width, color=colors, hatch='--', label='full', edgecolor='grey',
         linewidth=5)
 plt.xticks(_x, xvals)
-plt.ylabel('fraction real highpros \n flipped to lowpros')
+plt.ylabel('counterfactual fraction')
 sns.despine()
 leg = plt.legend()
 for legobj in leg.legendHandles:
     legobj.set_linewidth(0)
-plt.ylim(0,0.3)
+plt.ylim(0, 0.34)
 plt.title('end of simulation')
 savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel')
 
@@ -184,11 +183,11 @@ for metric in ('BGSD', 's_all'):
     plt.bar(_x - width / 2,
             model_evolution_diff[metric][model_evolution_diff['modeltype'] == 'base'],
             width=width, color=colors, hatch='//', label='base', edgecolor='grey',
-        linewidth=5)
+            linewidth=5)
     plt.bar(_x + width / 2,
             model_evolution_diff[metric][model_evolution_diff['modeltype'] == 'full'],
             width=width, color=colors, hatch='--', label='full', edgecolor='grey',
-        linewidth=5)
+            linewidth=5)
     plt.xticks(_x, xvals)
     leg = plt.legend()
     for legobj in leg.legendHandles:
@@ -196,21 +195,20 @@ for metric in ('BGSD', 's_all'):
     plt.ylabel(metric)
     sns.despine()
     if metric == 'BGSD':
-        plt.ylim(-0.25,0)
+        plt.ylim(-0.25, 0)
     plt.title('difference end - start of simulation')
     savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel')
 
-## multipanel plots, single plot for each scenario modeltype configuration
+# multipanel plots, single plot for each scenario modeltype configuration
 for scenario in np.unique(model_evolution_all['scenario']):
     for modeltype in modeltypes:
-
         model_evolution = model_evolution_all.query('(scenario==@scenario) & (modeltype==@modeltype)')
         n_rows = 4
         n_cols = 2
         fig = plt.figure(figsize=(13, 7))
 
         ax1 = plt.subplot(n_rows, n_cols, 1)
-        model_evolution[['s_priv', 's_upriv','s_all']].plot(ax=ax1)
+        model_evolution[['s_priv', 's_upriv', 's_all']].plot(ax=ax1)
         sns.despine()
         plt.ylabel('$s_{real}$')
 
@@ -239,27 +237,25 @@ for scenario in np.unique(model_evolution_all['scenario']):
         plt.xlim(*ax1.get_xlim())
         sns.despine()
 
-
         ax = plt.subplot(n_rows, n_cols, 6)
         model_evolution['frac_upriv'].plot(ax=ax)
         sns.despine()
         plt.ylabel('frac_upriv')
 
-
         ax = plt.subplot(n_rows, n_cols, 7)
         # model_evolution['inbal_waiting'].plot(ax=ax)
         # plt.ylabel('inbal_waiting')
         plt.plot(model_evolution.eval('n_waiting_priv / n_active_priv'), label='priv')
-        plt.plot(model_evolution.eval('n_waiting_upriv / n_active_upriv'),label='upriv')
+        plt.plot(model_evolution.eval('n_waiting_upriv / n_active_upriv'), label='upriv')
         plt.legend()
         plt.ylabel('fraction in waiting')
         sns.despine()
         plt.xlabel('t')
 
         ax = plt.subplot(n_rows, n_cols, 8)
-        model_evolution['fraction_real_highpros_flipped_to_lowpros'].plot(ax=ax)
+        model_evolution['fraction_of_lowpros_correctly_highpros_after_flipping'].plot(ax=ax)
         sns.despine()
-        plt.ylabel('fraction real highpros \n flipped to lowpros')
+        plt.ylabel('counterfactual fraction')
         plt.xlim(*ax1.get_xlim())
         plt.xlabel('t')
         plt.suptitle(f'scenario {scenario} modeltype {modeltype}')
