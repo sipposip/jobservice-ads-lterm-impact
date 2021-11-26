@@ -35,7 +35,14 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-labormarket_bias = 0
+labormarket_bias = 2  # run with 0 and 2
+
+if labormarket_bias == 0:
+    labormarket_bias_string = 'unbiased'
+elif labormarket_bias > 0:
+    labormarket_bias_string = 'biased'
+else:
+    labormarket_bias_string = 'biased towards underprivileged'
 
 modeltypes = ('full', 'base')
 configs = [
@@ -122,7 +129,7 @@ for metric in ('BGSD', 'coef1', 'coef2', 'coef2_standardized'):
     for modeltype in modeltypes:
         plt.figure(figsize=figsize)
         sns.lineplot('time', metric, hue='scenario', data=model_evolution_all.query('modeltype==@modeltype'))
-        plt.title(f'modeltype={modeltype}')
+        plt.title(f'modeltype={modeltype}, labormarket={labormarket_bias_string}')
         sns.despine()
         if metric == 'BGSD':
             plt.ylim(0, 0.45)
@@ -258,6 +265,6 @@ for scenario in np.unique(model_evolution_all['scenario']):
         plt.ylabel('counterfactual fraction')
         plt.xlim(*ax1.get_xlim())
         plt.xlabel('t')
-        plt.suptitle(f'scenario {scenario} modeltype {modeltype}')
+        plt.suptitle(f'scenario {scenario} modeltype {modeltype} , labormarket {labormarket_bias_string}')
         plt.tight_layout(w_pad=0, h_pad=0)
         savefig(f'{plotdir2}/onescenario_multipanel{paramstr}_{scenario}_{modeltype}')
