@@ -35,7 +35,7 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-labormarket_bias = 2  # run with 0 and 2
+labormarket_bias = 0  # run with 0 and 2
 
 if labormarket_bias == 0:
     labormarket_bias_string = 'unbiased'
@@ -228,7 +228,7 @@ for scenario in np.unique(model_evolution_all['scenario']):
         model_evolution['mean_Tu_priv_current'].plot(ax=ax, label='priv')
         model_evolution['mean_Tu_upriv_current'].plot(ax=ax, label='upriv')
         plt.legend()
-        plt.ylabel('T_u')
+        plt.ylabel('$T_{u}$')
         sns.despine()
 
         ax = plt.subplot(n_rows, n_cols, 4)
