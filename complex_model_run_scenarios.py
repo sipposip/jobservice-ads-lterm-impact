@@ -43,6 +43,8 @@ performance topics:
 import os
 import sys
 from tqdm import trange
+import matplotlib
+matplotlib.use('agg')
 from pylab import plt
 import seaborn as sns
 import numpy as np
@@ -240,7 +242,7 @@ jobmarket_function_loc = 0
 jobmarket_function_scale = 6
 labormarket_bias = 2  # bias to jobmarket_scale. ran with 2,
 modeltype = 'base'  # full | base
-scenario = sys.argv[1]
+# scenario = sys.argv[1]
 n_runs = 10  # runs per configuration (with different random seed)
 
 for config in configs:
