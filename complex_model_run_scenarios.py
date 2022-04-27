@@ -240,8 +240,8 @@ T_u_max = 100  # time after which workless individuals leave the system automati
 class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
-labormarket_bias = 2  # bias to jobmarket_scale. ran with 2,
-modeltype = 'base'  # full | base
+labormarket_bias = 0  # bias to jobmarket_scale. ran with 2,
+modeltype = 'full'  # full | base
 # scenario = sys.argv[1]
 n_runs = 10  # runs per configuration (with different random seed)
 

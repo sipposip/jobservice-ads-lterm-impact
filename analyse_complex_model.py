@@ -36,6 +36,7 @@ class_boundary = 10  # in time-units
 jobmarket_function_loc = 0
 jobmarket_function_scale = 6
 labormarket_bias = 0  # run with 0 and 2
+n_runs = 10  # runs per configuration (with different random seed)
 
 if labormarket_bias == 0:
     labormarket_bias_string = 'unbiased'
@@ -72,26 +73,30 @@ configs = [
 model_evolution_all = []
 df_hist_last_all = []
 for config in configs:
-    scenario = config['scenario']
+    for i_run in range(n_runs):
+        scenario = config['scenario']
 
-    k_matrix = config['k_matrix']
+        k_matrix = config['k_matrix']
 
-    for modeltype in modeltypes:
-        # parameterstring string for filenames
-        paramstr = '_'.join(
-            [str(e) for e in (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
-                              jobmarket_function_loc, jobmarket_function_scale, scale_factor, modeltype,
-                              labormarket_bias, scenario)])
+        for modeltype in modeltypes:
+            # parameterstring string for filenames
+            paramstr = '_'.join(
+                [str(e) for e in
+                 (alpha_prot, tsteps, n_spinup, n_retain_from_spinup, delta_T_u, T_u_max, class_boundary,
+                  jobmarket_function_loc, jobmarket_function_scale, scale_factor, modeltype,
+                  labormarket_bias, scenario, i_run)])
 
-        model_evolution = pd.read_csv(f'{datadir}/model_evolution_{paramstr}.csv', index_col=0)
-        df_hist_last = pd.read_csv(f'{datadir}/df_hist_last_{paramstr}.csv', index_col=0)
-        model_evolution['scenario'] = scenario
-        model_evolution['modeltype'] = modeltype
-        model_evolution['time'] = model_evolution.index
-        df_hist_last['scneario'] = scenario
-        df_hist_last['modeltype'] = modeltype
-        model_evolution_all.append(model_evolution)
-        df_hist_last_all.append(df_hist_last)
+            model_evolution = pd.read_csv(f'{datadir}/model_evolution_{paramstr}.csv', index_col=0)
+            df_hist_last = pd.read_csv(f'{datadir}/df_hist_last_{paramstr}.csv', index_col=0)
+            model_evolution['scenario'] = scenario
+            model_evolution['modeltype'] = modeltype
+            model_evolution['run'] = i_run
+            model_evolution['time'] = model_evolution.index
+            df_hist_last['scneario'] = scenario
+            df_hist_last['modeltype'] = modeltype
+            df_hist_last['run'] = i_run
+            model_evolution_all.append(model_evolution)
+            df_hist_last_all.append(df_hist_last)
 
 model_evolution_all = pd.concat(model_evolution_all)
 df_hist_last_all = pd.concat(df_hist_last_all)
@@ -125,7 +130,7 @@ paramstr = '_'.join(
 # lineplots, colored scenarios, one plot for each modeltype
 figsize = (7, 3)
 colors = sns.color_palette('colorblind', n_colors=7)
-for metric in ('BGSD', 'coef1', 'coef2', 'coef2_standardized'):
+for metric in ('BGSD', 'coef1', 'coef2', 'coef2_standardized', 'equal_opportunity', 'predictive_equality'):
     for modeltype in modeltypes:
         plt.figure(figsize=figsize)
         sns.lineplot('time', metric, hue='scenario', data=model_evolution_all.query('modeltype==@modeltype'))
@@ -144,7 +149,8 @@ _x = np.arange(len(xvals))
 assert (np.array_equal(model_evolution_end_agg['scenario'][model_evolution_end_agg['modeltype'] == 'base'],
                        model_evolution_end_agg['scenario'][model_evolution_end_agg['modeltype'] == 'full']))
 width = 0.4
-for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD', 's_all', 'coef2_standardized'):
+for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD', 's_all', 'coef2_standardized', 'equal_opportunity',
+               'predictive_equality'):
     # at end of simulation
     plt.figure(figsize=figsize)
     plt.bar(_x - width / 2,
