@@ -151,8 +151,8 @@ for metric in ('BGSD', 'coef1', 'coef2', 'coef2_standardized', 'equal_opportunit
         sns.lineplot('time', metric, hue='scenario', data=model_evolution_all.query('modeltype==@modeltype'))
         plt.title(f'modeltype={modeltype}, labormarket={labormarket_bias_string}')
         sns.despine()
-        if metric == 'BGSD':
-            plt.ylim(0, 0.45)
+        # if metric == 'BGSD':
+        #     plt.ylim(0, 0.45)
         savefig(f'{plotdir}/{metric}_vs_time_allscens_{paramstr}_{modeltype}_complexmodel')
 
 # barplots
@@ -183,6 +183,8 @@ for metric in ('BGSD', 'BGaccuracyD', 'BGprecisionD', 'BGrecallD', 's_all', 'coe
     plt.ylabel(metric)
     sns.despine()
     plt.title('end of simulation')
+    if metric == 'equal_opportunity':
+        plt.ylim(-0.25, 0.05)
     savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel')
 
 metric = 'fraction_of_lowpros_correctly_highpros_after_flipping'
@@ -201,7 +203,7 @@ sns.despine()
 leg = plt.legend()
 for legobj in leg.legendHandles:
     legobj.set_linewidth(0)
-plt.ylim(0, 0.34)
+# plt.ylim(0, 0.34)
 plt.title('end of simulation')
 savefig(f'{plotdir}/barplot_{metric}_{paramstr}_complexmodel')
 
@@ -222,8 +224,8 @@ for metric in ('BGSD', 's_all'):
         legobj.set_linewidth(0)
     plt.ylabel(metric)
     sns.despine()
-    if metric == 'BGSD':
-        plt.ylim(-0.25, 0)
+    # if metric == 'BGSD':
+        # plt.ylim(-0.25, 0)
     plt.title('difference end - start of simulation')
     savefig(f'{plotdir}/barplot_diff_{metric}_{paramstr}_complexmodel')
 
